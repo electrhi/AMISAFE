@@ -1,9 +1,7 @@
 import os
-import io
 import re
 import json
-import base64
-from datetime import date, datetime
+from datetime import date
 
 import pandas as pd
 import psycopg
@@ -19,7 +17,6 @@ from flask import (
     jsonify,
     send_from_directory,
 )
-from werkzeug.utils import secure_filename
 
 load_dotenv()
 
@@ -34,10 +31,6 @@ FORMS_FOLDER = "forms"
 
 os.makedirs(FORMS_FOLDER, exist_ok=True)
 
-
-# =========================
-# HTML TEMPLATES
-# =========================
 
 LOGIN_HTML = """
 <!doctype html>
@@ -94,16 +87,12 @@ ADMIN_HTML = """
         .wrap { max-width: 1100px; margin: 40px auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
         h2, h3 { margin-top: 0; }
         .box { margin-top: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
-        .menu a, .menu button { display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 10px 14px; background: #1f6feb; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+        .menu a { display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 10px 14px; background: #1f6feb; color: white; text-decoration: none; border-radius: 8px; }
         .menu a.gray { background: #6b7280; }
         .form-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 12px; background: white; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-left: 8px; }
         .badge.group { background: #e8f0fe; color: #1a73e8; }
         .badge.individual { background: #e6f4ea; color: #188038; }
-        textarea { width: 100%; min-height: 360px; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; padding: 12px; font-family: Consolas, monospace; }
-        input[type=file] { margin-top: 10px; }
-        .success { color: #0b8043; margin-bottom: 10px; }
-        .error { color: #d93025; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -117,7 +106,7 @@ ADMIN_HTML = """
                 <a href="/init-db">DB 초기화 테스트</a>
                 <a href="/admin">관리자 홈</a>
                 <a href="/admin/config">양식 JSON 편집</a>
-                <a href="/logout" class="gray">로그아웃</a>
+                <a class="gray" href="/logout">로그아웃</a>
             </div>
         </div>
 
@@ -277,36 +266,240 @@ FORM_RUN_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ form.form_name }}</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 0; }
-        .wrap { max-width: 1400px; margin: 20px auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-        .topbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
-        .btn { display: inline-block; padding: 10px 14px; background: #1f6feb; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 14px;
+            background: #1f6feb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
         .btn.gray { background: #6b7280; }
         .btn.green { background: #188038; }
-        .info-box { padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; margin-bottom: 12px; }
-        #statusText { font-weight: bold; }
-        .stage-wrap { overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa; padding: 10px; }
-        .stage { position: relative; display: inline-block; transform-origin: top left; }
-        .stage img { display: block; max-width: 100%; height: auto; }
-        .overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
-        .field-item { position: absolute; box-sizing: border-box; }
-        .field-item.readonly { pointer-events: none; }
-        .field-box { box-sizing: border-box; width: 100%; height: 100%; }
-        .field-text { width: 100%; height: 100%; box-sizing: border-box; border: 1px solid #1f6feb; border-radius: 4px; background: rgba(255,255,255,0.85); padding: 4px; font-size: 14px; }
-        .field-checkbox { width: 100%; height: 100%; }
-        .field-label { width: 100%; height: 100%; display: flex; align-items: center; font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.0); }
-        .readonly-box { width: 100%; height: 100%; border: 1px dashed #999; background: rgba(255,255,255,0.4); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; overflow: hidden; }
-        .signature-wrap { width: 100%; height: 100%; position: relative; border: 1px solid #1f6feb; border-radius: 4px; background: rgba(255,255,255,0.9); }
-        .signature-canvas { width: 100%; height: 100%; display: block; }
-        .signature-clear { position: absolute; right: 2px; top: 2px; font-size: 11px; padding: 2px 4px; border: none; border-radius: 4px; background: #d93025; color: white; cursor: pointer; }
-        .choice-group { width: 100%; height: 100%; position: relative; }
-        .choice-option { position: absolute; display: flex; align-items: center; justify-content: center; border: 1px solid #1f6feb; background: rgba(255,255,255,0.9); box-sizing: border-box; }
-        .choice-option input { margin: 0; }
-        .choice-option.readonly-choice { background: rgba(255,255,255,0.6); border: 1px dashed #999; font-size: 11px; }
-        .tools { margin: 10px 0; }
-        .small { color: #666; font-size: 13px; }
+
+        .info-box {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f8fafc;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+
+        #statusText {
+            font-weight: bold;
+        }
+
+        .stage-wrap {
+            overflow: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fafafa;
+            padding: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .stage {
+            position: relative;
+            display: inline-block;
+            transform-origin: top left;
+        }
+
+        .stage img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .field-item {
+            position: absolute;
+            box-sizing: border-box;
+        }
+
+        .field-item.readonly {
+            pointer-events: none;
+        }
+
+        .field-text {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            border: 1px solid #1f6feb;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.88);
+            padding: 2px 4px;
+            resize: none;
+            overflow: hidden;
+        }
+
+        .field-checkbox {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        .field-label {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: transparent;
+            overflow: hidden;
+            word-break: keep-all;
+        }
+
+        .readonly-box {
+            width: 100%;
+            height: 100%;
+            border: 1px dashed #999;
+            background: rgba(255,255,255,0.55);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-sizing: border-box;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .signature-wrap {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border: 1px solid #1f6feb;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.92);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .signature-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        .signature-clear {
+            position: absolute;
+            right: 2px;
+            top: 2px;
+            border: none;
+            border-radius: 4px;
+            background: #d93025;
+            color: white;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .choice-group {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .choice-option {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #1f6feb;
+            background: rgba(255,255,255,0.9);
+            box-sizing: border-box;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .choice-option input {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        .choice-option.readonly-choice {
+            background: rgba(255,255,255,0.6);
+            border: 1px dashed #999;
+        }
+
+        .tools {
+            margin: 10px 0;
+        }
+
+        .small {
+            color: #666;
+            font-size: 13px;
+        }
+
         @media (max-width: 768px) {
-            .wrap { margin: 10px; padding: 12px; }
+            .wrap {
+                margin: 8px;
+                padding: 10px;
+                border-radius: 10px;
+            }
+
+            .topbar {
+                align-items: stretch;
+            }
+
+            .topbar > div:last-child {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 9px 12px;
+                font-size: 14px;
+            }
+
+            .info-box {
+                font-size: 14px;
+            }
+
+            .small {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -328,9 +521,7 @@ FORM_RUN_HTML = """
     <div class="info-box">
         <div><strong>사용자:</strong> {{ user.name }} ({{ user.id }}) / <strong>조:</strong> {{ user.group }} / <strong>구분:</strong> {{ user.role }} / <strong>슬롯:</strong> {{ user.slot_index }}</div>
         <div><strong>작업일자:</strong> {{ work_date }} / <strong>문서 ID:</strong> {{ document_id }}</div>
-        <div class="small">
-            공동양식은 같은 조가 한 장을 공유합니다. 개인양식은 본인 것만 저장합니다.
-        </div>
+        <div class="small">공동양식은 같은 조가 한 장을 공유합니다. 개인양식은 본인 것만 저장합니다.</div>
     </div>
 
     <div class="tools">
@@ -398,14 +589,15 @@ function px(v) {
     return `${v}px`;
 }
 
-function createReadonlyText(field, value) {
+function createReadonlyText(field, value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
     wrap.textContent = value || "";
+    wrap.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
     return wrap;
 }
 
-function createEditableText(field, value) {
+function createEditableText(field, value, uiScale) {
     const input = document.createElement("textarea");
     input.className = "field-text";
     input.value = value || "";
@@ -414,10 +606,12 @@ function createEditableText(field, value) {
     input.dataset.fieldKey = fieldKey(field);
     if (field.max_length) input.maxLength = field.max_length;
     if (field.placeholder) input.placeholder = field.placeholder;
+    input.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    input.style.padding = `${Math.max(1, 3 * uiScale)}px ${Math.max(2, 4 * uiScale)}px`;
     return input;
 }
 
-function createEditableCheckbox(field, value) {
+function createEditableCheckbox(field, value, uiScale) {
     const input = document.createElement("input");
     input.type = "checkbox";
     input.className = "field-checkbox";
@@ -425,28 +619,32 @@ function createEditableCheckbox(field, value) {
     input.dataset.fieldId = field.field_id;
     input.dataset.fieldType = field.type;
     input.dataset.fieldKey = fieldKey(field);
+    input.style.transform = `scale(${Math.max(0.75, uiScale)})`;
+    input.style.transformOrigin = "center center";
     return input;
 }
 
-function createReadonlyCheckbox(value) {
+function createReadonlyCheckbox(value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
     wrap.textContent = (value === true || value === "true" || value === "checked" || value === 1) ? "☑" : "☐";
+    wrap.style.fontSize = `${Math.max(10, 18 * uiScale)}px`;
     return wrap;
 }
 
-function createEditableChoiceGroup(field, value) {
+function createEditableChoiceGroup(field, value, ratioX, ratioY, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "choice-group";
     const key = fieldKey(field);
     const options = field.options || [];
+
     options.forEach((opt) => {
         const div = document.createElement("div");
         div.className = "choice-option";
-        div.style.left = px(opt.dx || 0);
-        div.style.top = px(opt.dy || 0);
-        div.style.width = px(opt.width || 20);
-        div.style.height = px(opt.height || 20);
+        div.style.left = px((opt.dx || 0) * ratioX);
+        div.style.top = px((opt.dy || 0) * ratioY);
+        div.style.width = px((opt.width || 20) * ratioX);
+        div.style.height = px((opt.height || 20) * ratioY);
 
         const input = document.createElement("input");
         input.type = "radio";
@@ -456,26 +654,33 @@ function createEditableChoiceGroup(field, value) {
         input.dataset.fieldId = field.field_id;
         input.dataset.fieldType = field.type;
         input.dataset.fieldKey = key;
+        input.style.transform = `scale(${Math.max(0.7, uiScale)})`;
+        input.style.transformOrigin = "center center";
+
         div.appendChild(input);
         wrap.appendChild(div);
     });
+
     return wrap;
 }
 
-function createReadonlyChoiceGroup(field, value) {
+function createReadonlyChoiceGroup(field, value, ratioX, ratioY, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "choice-group";
     const options = field.options || [];
+
     options.forEach((opt) => {
         const div = document.createElement("div");
         div.className = "choice-option readonly-choice";
-        div.style.left = px(opt.dx || 0);
-        div.style.top = px(opt.dy || 0);
-        div.style.width = px(opt.width || 20);
-        div.style.height = px(opt.height || 20);
+        div.style.left = px((opt.dx || 0) * ratioX);
+        div.style.top = px((opt.dy || 0) * ratioY);
+        div.style.width = px((opt.width || 20) * ratioX);
+        div.style.height = px((opt.height || 20) * ratioY);
+        div.style.fontSize = `${Math.max(8, 12 * uiScale)}px`;
         div.textContent = String(value || "") === String(opt.option_value) ? "●" : "";
         wrap.appendChild(div);
     });
+
     return wrap;
 }
 
@@ -503,8 +708,6 @@ function loadDataUrlOnCanvas(canvas, dataUrl) {
 
 function attachSignatureDraw(canvas) {
     const ctx = fitCanvasResolution(canvas);
-    const rectForClear = () => canvas.getBoundingClientRect();
-
     let drawing = false;
     let lastX = 0;
     let lastY = 0;
@@ -560,7 +763,7 @@ function attachSignatureDraw(canvas) {
     canvas.addEventListener("touchend", end, { passive: false });
 }
 
-function createEditableSignature(field, value) {
+function createEditableSignature(field, value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "signature-wrap";
 
@@ -574,6 +777,9 @@ function createEditableSignature(field, value) {
     clearBtn.type = "button";
     clearBtn.className = "signature-clear";
     clearBtn.textContent = "지우기";
+    clearBtn.style.fontSize = `${Math.max(8, 11 * uiScale)}px`;
+    clearBtn.style.padding = `${Math.max(1, 2 * uiScale)}px ${Math.max(2, 4 * uiScale)}px`;
+
     clearBtn.onclick = () => {
         const ctx = fitCanvasResolution(canvas);
         const rect = canvas.getBoundingClientRect();
@@ -592,7 +798,7 @@ function createEditableSignature(field, value) {
     return wrap;
 }
 
-function createReadonlySignature(value) {
+function createReadonlySignature(value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
     if (value) {
@@ -607,10 +813,11 @@ function createReadonlySignature(value) {
     return wrap;
 }
 
-function createLabel(field, value) {
+function createLabel(field, value, uiScale) {
     const div = document.createElement("div");
     div.className = "field-label";
     div.textContent = value || "";
+    div.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
     return div;
 }
 
@@ -622,6 +829,7 @@ function renderFields() {
     const naturalH = img.naturalHeight || img.clientHeight;
     const ratioX = img.clientWidth / naturalW;
     const ratioY = img.clientHeight / naturalH;
+    const uiScale = Math.min(ratioX, ratioY);
 
     (FORM_DEF.fields || []).forEach((field) => {
         if (!field.visible) return;
@@ -641,17 +849,17 @@ function renderFields() {
         let node = null;
 
         if (field.type === "label") {
-            node = createLabel(field, labelValue);
+            node = createLabel(field, labelValue, uiScale);
         } else if (field.type === "text") {
-            node = editable ? createEditableText(field, value) : createReadonlyText(field, value);
+            node = editable ? createEditableText(field, value, uiScale) : createReadonlyText(field, value, uiScale);
         } else if (field.type === "checkbox") {
-            node = editable ? createEditableCheckbox(field, value) : createReadonlyCheckbox(value);
+            node = editable ? createEditableCheckbox(field, value, uiScale) : createReadonlyCheckbox(value, uiScale);
         } else if (field.type === "choice_group") {
-            node = editable ? createEditableChoiceGroup(field, value) : createReadonlyChoiceGroup(field, value);
+            node = editable ? createEditableChoiceGroup(field, value, ratioX, ratioY, uiScale) : createReadonlyChoiceGroup(field, value, ratioX, ratioY, uiScale);
         } else if (field.type === "signature") {
-            node = editable ? createEditableSignature(field, value) : createReadonlySignature(value);
+            node = editable ? createEditableSignature(field, value, uiScale) : createReadonlySignature(value, uiScale);
         } else {
-            node = createReadonlyText(field, value);
+            node = createReadonlyText(field, value, uiScale);
         }
 
         item.appendChild(node);
@@ -666,9 +874,7 @@ function getCurrentFieldValues() {
         const key = fieldKey(field);
         if (!isEditable(field)) return;
 
-        if (field.type === "label") {
-            return;
-        }
+        if (field.type === "label") return;
 
         if (field.type === "text") {
             const el = overlay.querySelector(`[data-field-key="${key}"]`);
@@ -696,7 +902,6 @@ function getCurrentFieldValues() {
             } else {
                 result[key] = "";
             }
-            return;
         }
     });
 
@@ -826,6 +1031,20 @@ async function downloadImage() {
     link.click();
 }
 
+function applyInitialMobileZoom() {
+    const vw = window.innerWidth || 400;
+    if (vw <= 480) {
+        zoomRange.value = "85";
+    } else if (vw <= 768) {
+        zoomRange.value = "92";
+    } else {
+        zoomRange.value = "100";
+    }
+    const v = Number(zoomRange.value);
+    zoomLabel.textContent = v + "%";
+    captureArea.style.transform = `scale(${v / 100})`;
+}
+
 document.getElementById("saveBtn").addEventListener("click", saveForm);
 document.getElementById("downloadBtn").addEventListener("click", downloadImage);
 
@@ -838,6 +1057,7 @@ zoomRange.addEventListener("input", () => {
 img.addEventListener("load", () => {
     setStageSize();
     renderFields();
+    applyInitialMobileZoom();
     refreshStatus();
 });
 
@@ -851,21 +1071,10 @@ window.addEventListener("resize", () => {
 """
 
 
-# =========================
-# UTIL
-# =========================
-
 def get_conn():
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL 환경변수가 설정되지 않았습니다.")
     return psycopg.connect(DATABASE_URL)
-
-
-def slugify_text(value: str) -> str:
-    value = str(value or "").strip()
-    value = re.sub(r"[\\\\/:*?\"<>|\\s]+", "_", value)
-    value = re.sub(r"_+", "_", value)
-    return value.strip("_")
 
 
 def get_today_str():
@@ -882,10 +1091,6 @@ def make_json_response(ok=True, **kwargs):
     data.update(kwargs)
     return jsonify(data)
 
-
-# =========================
-# DB INIT
-# =========================
 
 def init_db():
     sql_list = [
@@ -949,10 +1154,6 @@ def init_db():
                 cur.execute(sql)
         conn.commit()
 
-
-# =========================
-# USERS / EXCEL
-# =========================
 
 def load_users():
     if not os.path.exists(USERS_XLSX_PATH):
@@ -1042,10 +1243,6 @@ def get_group_users(group_name: str):
     return users
 
 
-# =========================
-# FORM CONFIG
-# =========================
-
 def load_form_config():
     if not os.path.exists(FORM_CONFIG_PATH):
         return {"forms": []}
@@ -1084,10 +1281,6 @@ def get_available_forms_for_user(user):
         forms.append(form)
     return forms
 
-
-# =========================
-# FORM / VALUE HELPERS
-# =========================
 
 def field_key(field):
     slot_index = field.get("slot_index")
@@ -1447,17 +1640,14 @@ def save_submission(document, form, user, submitted_values):
                     if val is not None and str(val).strip() != "":
                         value_text = str(val)
                         is_completed = True
-
                 elif field["type"] == "checkbox":
                     if bool(val):
                         value_text = "true"
                         is_completed = True
-
                 elif field["type"] == "choice_group":
                     if val is not None and str(val).strip() != "":
                         value_text = str(val)
                         is_completed = True
-
                 elif field["type"] == "signature":
                     if val is not None and str(val).strip() != "":
                         value_image = str(val)
@@ -1637,10 +1827,6 @@ def recalc_document_status(document, form, current_user):
     }
 
 
-# =========================
-# ROUTES
-# =========================
-
 @app.route("/init-db")
 def init_db_route():
     try:
@@ -1665,10 +1851,7 @@ def home():
             return render_template_string(LOGIN_HTML, error=f"로그인 처리 중 오류: {e}")
 
         if not user:
-            return render_template_string(
-                LOGIN_HTML,
-                error="아이디 또는 비밀번호가 올바르지 않거나 사용 중지된 계정입니다."
-            )
+            return render_template_string(LOGIN_HTML, error="아이디 또는 비밀번호가 올바르지 않거나 사용 중지된 계정입니다.")
 
         session["user"] = user
         return redirect(url_for("dashboard"))
@@ -1854,11 +2037,7 @@ def api_save_form(form_id):
 
     missing = validate_submission_for_current_user(form, user, submitted_values)
     if missing:
-        return make_json_response(
-            False,
-            message="필수 입력이 누락되었습니다.",
-            missing=missing
-        ), 400
+        return make_json_response(False, message="필수 입력이 누락되었습니다.", missing=missing), 400
 
     save_submission(document, form, user, submitted_values)
     status = recalc_document_status(document, form, user)
@@ -1908,4 +2087,4 @@ def api_form_status(form_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
