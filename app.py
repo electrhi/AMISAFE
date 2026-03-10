@@ -1,11 +1,9 @@
 import os
-import re
 import json
 from datetime import date
 
 import pandas as pd
 import psycopg
-
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -30,7 +28,6 @@ FORM_CONFIG_PATH = "form_config.json"
 FORMS_FOLDER = "forms"
 
 os.makedirs(FORMS_FOLDER, exist_ok=True)
-
 
 LOGIN_HTML = """
 <!doctype html>
@@ -263,9 +260,10 @@ FORM_RUN_HTML = """
 <html lang="ko">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>{{ form.form_name }}</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: Arial, sans-serif;
             background: #f5f7fb;
@@ -275,12 +273,11 @@ FORM_RUN_HTML = """
 
         .wrap {
             max-width: 1400px;
-            margin: 20px auto;
+            margin: 16px auto;
             background: #fff;
             border-radius: 12px;
             padding: 16px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-            box-sizing: border-box;
         }
 
         .topbar {
@@ -301,23 +298,41 @@ FORM_RUN_HTML = """
             border-radius: 8px;
             border: none;
             cursor: pointer;
-            box-sizing: border-box;
+            min-height: 42px;
         }
 
         .btn.gray { background: #6b7280; }
         .btn.green { background: #188038; }
+        .btn.red { background: #d93025; }
 
         .info-box {
-            padding: 12px;
+            padding: 14px;
             border: 1px solid #e5e7eb;
             border-radius: 10px;
             background: #f8fafc;
             margin-bottom: 12px;
-            box-sizing: border-box;
+            line-height: 1.5;
         }
 
-        #statusText {
-            font-weight: bold;
+        #statusText { font-weight: bold; }
+
+        .tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin: 10px 0 14px 0;
+        }
+
+        .tools input[type="range"] {
+            vertical-align: middle;
+            width: 240px;
+            max-width: 60vw;
+        }
+
+        .small {
+            color: #666;
+            font-size: 13px;
         }
 
         .stage-wrap {
@@ -327,54 +342,36 @@ FORM_RUN_HTML = """
             background: #fafafa;
             padding: 10px;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-x pan-y;
         }
 
         .stage {
             position: relative;
             display: inline-block;
             transform-origin: top left;
+            line-height: 0;
         }
 
         .stage img {
             display: block;
-            max-width: 100%;
+            width: 100%;
             height: auto;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
         }
 
         .overlay {
             position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
         }
 
         .field-item {
             position: absolute;
-            box-sizing: border-box;
         }
 
         .field-item.readonly {
             pointer-events: none;
-        }
-
-        .field-text {
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-            border: 1px solid #1f6feb;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.88);
-            padding: 2px 4px;
-            resize: none;
-            overflow: hidden;
-        }
-
-        .field-checkbox {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            box-sizing: border-box;
         }
 
         .field-label {
@@ -383,9 +380,11 @@ FORM_RUN_HTML = """
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            background: transparent;
             overflow: hidden;
-            word-break: keep-all;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.2;
+            background: transparent;
         }
 
         .readonly-box {
@@ -398,39 +397,61 @@ FORM_RUN_HTML = """
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            box-sizing: border-box;
             text-align: center;
+            word-break: break-word;
+            line-height: 1.2;
+            padding: 2px;
+        }
+
+        .tap-box {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #1f6feb;
+            background: rgba(255,255,255,0.88);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            padding: 3px 6px;
+            line-height: 1.2;
+            white-space: pre-wrap;
             word-break: break-word;
         }
 
-        .signature-wrap {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            border: 1px solid #1f6feb;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.92);
-            box-sizing: border-box;
-            overflow: hidden;
+        .tap-box.required-empty {
+            border-color: #d93025;
+            background: rgba(255, 244, 244, 0.95);
         }
 
-        .signature-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            touch-action: none;
+        .tap-box .placeholder {
+            color: #999;
         }
 
-        .signature-clear {
-            position: absolute;
-            right: 2px;
-            top: 2px;
-            border: none;
+        .checkbox-box {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #1f6feb;
             border-radius: 4px;
-            background: #d93025;
-            color: white;
+            background: rgba(255,255,255,0.94);
             cursor: pointer;
-            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .checkbox-box.checked::after {
+            content: "✓";
+            font-weight: 900;
+        }
+
+        .checkbox-box.required-empty {
+            border-color: #d93025;
+            background: rgba(255, 244, 244, 0.95);
         }
 
         .choice-group {
@@ -444,17 +465,16 @@ FORM_RUN_HTML = """
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid #1f6feb;
-            background: rgba(255,255,255,0.9);
-            box-sizing: border-box;
+            border: 2px solid #1f6feb;
+            background: rgba(255,255,255,0.92);
             border-radius: 999px;
-            overflow: hidden;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
         }
 
-        .choice-option input {
-            width: 100%;
-            height: 100%;
-            margin: 0;
+        .choice-option.selected::after {
+            content: "●";
         }
 
         .choice-option.readonly-choice {
@@ -462,13 +482,104 @@ FORM_RUN_HTML = """
             border: 1px dashed #999;
         }
 
-        .tools {
-            margin: 10px 0;
+        .signature-preview {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #1f6feb;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
         }
 
-        .small {
+        .signature-preview.required-empty {
+            border-color: #d93025;
+            background: rgba(255, 244, 244, 0.95);
+        }
+
+        .signature-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            object-fit: contain;
+        }
+
+        .signature-preview .signature-placeholder {
             color: #666;
-            font-size: 13px;
+            text-align: center;
+            padding: 4px;
+            line-height: 1.2;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(96vw, 900px);
+            max-height: 92vh;
+            overflow: auto;
+            background: white;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            min-height: 180px;
+            resize: vertical;
+            border: 1px solid #cfd8e3;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        .signature-modal-box {
+            width: 100%;
+            height: min(58vh, 420px);
+            border: 1px solid #d0d7de;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            touch-action: none;
+        }
+
+        #signatureModalCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+            background: #fff;
         }
 
         @media (max-width: 768px) {
@@ -500,6 +611,14 @@ FORM_RUN_HTML = """
             .small {
                 font-size: 12px;
             }
+
+            .tools {
+                align-items: flex-start;
+            }
+
+            .tools input[type="range"] {
+                width: 180px;
+            }
         }
     </style>
 </head>
@@ -511,8 +630,8 @@ FORM_RUN_HTML = """
             <div class="small">양식유형: {{ form.form_type }} / 문서상태: <span id="statusText">{{ doc_status }}</span></div>
         </div>
         <div>
-            <button class="btn" id="saveBtn">저장</button>
-            <button class="btn green" id="downloadBtn">다운로드</button>
+            <button class="btn" id="saveBtn" type="button">저장</button>
+            <button class="btn green" id="downloadBtn" type="button">다운로드</button>
             <a class="btn gray" href="/forms">목록</a>
             <a class="btn gray" href="/logout">로그아웃</a>
         </div>
@@ -526,15 +645,41 @@ FORM_RUN_HTML = """
 
     <div class="tools">
         <label>배율:
-            <input type="range" id="zoomRange" min="50" max="150" value="100">
+            <input type="range" id="zoomRange" min="50" max="200" value="100">
             <span id="zoomLabel">100%</span>
         </label>
+        <div class="small">모바일에서는 칸을 직접 편집하지 않고, 칸을 누르면 큰 입력창이 열립니다.</div>
     </div>
 
-    <div class="stage-wrap">
+    <div class="stage-wrap" id="stageWrap">
         <div id="captureArea" class="stage">
             <img id="formImage" src="{{ image_url }}" alt="{{ form.form_name }}">
             <div id="overlay" class="overlay"></div>
+        </div>
+    </div>
+</div>
+
+<div id="textModal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-title" id="textModalTitle">텍스트 입력</div>
+        <textarea id="textModalInput" class="modal-textarea" placeholder="내용을 입력하세요"></textarea>
+        <div class="modal-actions">
+            <button type="button" class="btn gray" id="textModalCancel">취소</button>
+            <button type="button" class="btn" id="textModalConfirm">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="signatureModal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-title" id="signatureModalTitle">서명 입력</div>
+        <div class="signature-modal-box">
+            <canvas id="signatureModalCanvas"></canvas>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn red" id="signatureModalClear">지우기</button>
+            <button type="button" class="btn gray" id="signatureModalCancel">취소</button>
+            <button type="button" class="btn" id="signatureModalConfirm">확인</button>
         </div>
     </div>
 </div>
@@ -551,9 +696,23 @@ let CURRENT_STATUS = {{ status_json|safe }};
 const img = document.getElementById("formImage");
 const overlay = document.getElementById("overlay");
 const captureArea = document.getElementById("captureArea");
+const stageWrap = document.getElementById("stageWrap");
 const zoomRange = document.getElementById("zoomRange");
 const zoomLabel = document.getElementById("zoomLabel");
 const statusText = document.getElementById("statusText");
+
+const textModal = document.getElementById("textModal");
+const textModalTitle = document.getElementById("textModalTitle");
+const textModalInput = document.getElementById("textModalInput");
+const signatureModal = document.getElementById("signatureModal");
+const signatureModalTitle = document.getElementById("signatureModalTitle");
+const signatureModalCanvas = document.getElementById("signatureModalCanvas");
+
+let ACTIVE_TEXT_KEY = null;
+let ACTIVE_SIGNATURE_KEY = null;
+let SIGNATURE_DRAW_BOUND = false;
+
+const EDIT_STATE = {};
 
 function fieldKey(field) {
     if (field.slot_index !== null && field.slot_index !== undefined && field.slot_index !== "") {
@@ -578,18 +737,47 @@ function isEditable(field) {
     return targetRole === "공통" || targetRole === USER.role;
 }
 
-function setStageSize() {
-    overlay.style.width = img.clientWidth + "px";
-    overlay.style.height = img.clientHeight + "px";
-    captureArea.style.width = img.clientWidth + "px";
-    captureArea.style.height = img.clientHeight + "px";
-}
-
 function px(v) {
     return `${v}px`;
 }
 
-function createReadonlyText(field, value, uiScale) {
+function initializeState() {
+    (FORM_DEF.fields || []).forEach((field) => {
+        if (!field.visible || field.type === "label") return;
+        const key = fieldKey(field);
+        const initVal = RESOLVED_VALUES[key];
+        if (field.type === "checkbox") {
+            EDIT_STATE[key] = !!initVal;
+        } else {
+            EDIT_STATE[key] = initVal || "";
+        }
+    });
+}
+
+function setStageSize() {
+    overlay.style.width = img.clientWidth + "px";
+    overlay.style.height = img.clientHeight + "px";
+    captureArea.style.height = img.clientHeight + "px";
+}
+
+function getCurrentScaleRatios() {
+    const naturalW = img.naturalWidth || img.clientWidth || 1;
+    const naturalH = img.naturalHeight || img.clientHeight || 1;
+    return {
+        naturalW,
+        naturalH,
+        ratioX: img.clientWidth / naturalW,
+        ratioY: img.clientHeight / naturalH,
+        uiScale: Math.min(img.clientWidth / naturalW, img.clientHeight / naturalH),
+    };
+}
+
+function isEmptyValue(field, value) {
+    if (field.type === "checkbox") return !value;
+    return value === null || value === undefined || String(value).trim() === "";
+}
+
+function createReadonlyText(value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
     wrap.textContent = value || "";
@@ -597,67 +785,83 @@ function createReadonlyText(field, value, uiScale) {
     return wrap;
 }
 
-function createEditableText(field, value, uiScale) {
-    const input = document.createElement("textarea");
-    input.className = "field-text";
-    input.value = value || "";
-    input.dataset.fieldId = field.field_id;
-    input.dataset.fieldType = field.type;
-    input.dataset.fieldKey = fieldKey(field);
-    if (field.max_length) input.maxLength = field.max_length;
-    if (field.placeholder) input.placeholder = field.placeholder;
-    input.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
-    input.style.padding = `${Math.max(1, 3 * uiScale)}px ${Math.max(2, 4 * uiScale)}px`;
-    return input;
+function createEditableText(field, key, value, uiScale) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tap-box";
+    if (field.required && isEmptyValue(field, value)) {
+        btn.classList.add("required-empty");
+    }
+    btn.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    btn.style.padding = `${Math.max(1, 3 * uiScale)}px ${Math.max(2, 6 * uiScale)}px`;
+    btn.dataset.fieldKey = key;
+
+    if (value && String(value).trim() !== "") {
+        btn.textContent = value;
+    } else {
+        const span = document.createElement("span");
+        span.className = "placeholder";
+        span.textContent = field.placeholder || "눌러서 입력";
+        btn.appendChild(span);
+    }
+
+    btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openTextModal(field, key, value || "");
+    });
+
+    return btn;
 }
 
-function createEditableCheckbox(field, value, uiScale) {
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.className = "field-checkbox";
-    input.checked = value === true || value === "true" || value === "checked" || value === 1;
-    input.dataset.fieldId = field.field_id;
-    input.dataset.fieldType = field.type;
-    input.dataset.fieldKey = fieldKey(field);
-    input.style.transform = `scale(${Math.max(0.75, uiScale)})`;
-    input.style.transformOrigin = "center center";
-    return input;
+function createEditableCheckbox(field, key, value) {
+    const box = document.createElement("button");
+    box.type = "button";
+    box.className = "checkbox-box";
+    if (value) box.classList.add("checked");
+    if (field.required && !value) box.classList.add("required-empty");
+    box.dataset.fieldKey = key;
+
+    box.addEventListener("click", (e) => {
+        e.preventDefault();
+        EDIT_STATE[key] = !EDIT_STATE[key];
+        renderFields();
+    });
+
+    return box;
 }
 
 function createReadonlyCheckbox(value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
-    wrap.textContent = (value === true || value === "true" || value === "checked" || value === 1) ? "☑" : "☐";
+    wrap.textContent = value ? "☑" : "☐";
     wrap.style.fontSize = `${Math.max(10, 18 * uiScale)}px`;
     return wrap;
 }
 
-function createEditableChoiceGroup(field, value, ratioX, ratioY, uiScale) {
+function createEditableChoiceGroup(field, key, value, ratioX, ratioY, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "choice-group";
-    const key = fieldKey(field);
     const options = field.options || [];
 
     options.forEach((opt) => {
-        const div = document.createElement("div");
+        const div = document.createElement("button");
+        div.type = "button";
         div.className = "choice-option";
+        if (String(value || "") === String(opt.option_value)) {
+            div.classList.add("selected");
+        }
         div.style.left = px((opt.dx || 0) * ratioX);
         div.style.top = px((opt.dy || 0) * ratioY);
         div.style.width = px((opt.width || 20) * ratioX);
         div.style.height = px((opt.height || 20) * ratioY);
+        div.style.fontSize = `${Math.max(8, 12 * uiScale)}px`;
 
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = "cg_" + key;
-        input.value = opt.option_value;
-        input.checked = String(value || "") === String(opt.option_value);
-        input.dataset.fieldId = field.field_id;
-        input.dataset.fieldType = field.type;
-        input.dataset.fieldKey = key;
-        input.style.transform = `scale(${Math.max(0.7, uiScale)})`;
-        input.style.transformOrigin = "center center";
+        div.addEventListener("click", (e) => {
+            e.preventDefault();
+            EDIT_STATE[key] = opt.option_value;
+            renderFields();
+        });
 
-        div.appendChild(input);
         wrap.appendChild(div);
     });
 
@@ -684,136 +888,50 @@ function createReadonlyChoiceGroup(field, value, ratioX, ratioY, uiScale) {
     return wrap;
 }
 
-function fitCanvasResolution(canvas) {
-    const rect = canvas.getBoundingClientRect();
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
-    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    return ctx;
-}
+function createEditableSignature(field, key, value, uiScale) {
+    const box = document.createElement("button");
+    box.type = "button";
+    box.className = "signature-preview";
+    if (field.required && isEmptyValue(field, value)) {
+        box.classList.add("required-empty");
+    }
+    box.dataset.fieldKey = key;
 
-function loadDataUrlOnCanvas(canvas, dataUrl) {
-    if (!dataUrl) return;
-    const ctx = fitCanvasResolution(canvas);
-    const rect = canvas.getBoundingClientRect();
-    const image = new Image();
-    image.onload = () => {
-        ctx.clearRect(0, 0, rect.width, rect.height);
-        ctx.drawImage(image, 0, 0, rect.width, rect.height);
-    };
-    image.src = dataUrl;
-}
-
-function attachSignatureDraw(canvas) {
-    const ctx = fitCanvasResolution(canvas);
-    let drawing = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        if (e.touches && e.touches[0]) {
-            return {
-                x: e.touches[0].clientX - rect.left,
-                y: e.touches[0].clientY - rect.top
-            };
-        }
-        return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        };
+    if (value) {
+        const signImg = document.createElement("img");
+        signImg.src = value;
+        box.appendChild(signImg);
+    } else {
+        const place = document.createElement("div");
+        place.className = "signature-placeholder";
+        place.style.fontSize = `${Math.max(8, 12 * uiScale)}px`;
+        place.textContent = "눌러서 서명";
+        box.appendChild(place);
     }
 
-    function start(e) {
-        drawing = true;
-        const p = getPos(e);
-        lastX = p.x;
-        lastY = p.y;
+    box.addEventListener("click", (e) => {
         e.preventDefault();
-    }
-
-    function move(e) {
-        if (!drawing) return;
-        const p = getPos(e);
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#111";
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-        lastX = p.x;
-        lastY = p.y;
-        e.preventDefault();
-    }
-
-    function end(e) {
-        drawing = false;
-        e.preventDefault();
-    }
-
-    canvas.addEventListener("mousedown", start);
-    canvas.addEventListener("mousemove", move);
-    canvas.addEventListener("mouseup", end);
-    canvas.addEventListener("mouseleave", end);
-    canvas.addEventListener("touchstart", start, { passive: false });
-    canvas.addEventListener("touchmove", move, { passive: false });
-    canvas.addEventListener("touchend", end, { passive: false });
-}
-
-function createEditableSignature(field, value, uiScale) {
-    const wrap = document.createElement("div");
-    wrap.className = "signature-wrap";
-
-    const canvas = document.createElement("canvas");
-    canvas.className = "signature-canvas";
-    canvas.dataset.fieldId = field.field_id;
-    canvas.dataset.fieldType = field.type;
-    canvas.dataset.fieldKey = fieldKey(field);
-
-    const clearBtn = document.createElement("button");
-    clearBtn.type = "button";
-    clearBtn.className = "signature-clear";
-    clearBtn.textContent = "지우기";
-    clearBtn.style.fontSize = `${Math.max(8, 11 * uiScale)}px`;
-    clearBtn.style.padding = `${Math.max(1, 2 * uiScale)}px ${Math.max(2, 4 * uiScale)}px`;
-
-    clearBtn.onclick = () => {
-        const ctx = fitCanvasResolution(canvas);
-        const rect = canvas.getBoundingClientRect();
-        ctx.clearRect(0, 0, rect.width, rect.height);
-    };
-
-    wrap.appendChild(canvas);
-    wrap.appendChild(clearBtn);
-
-    requestAnimationFrame(() => {
-        fitCanvasResolution(canvas);
-        attachSignatureDraw(canvas);
-        if (value) loadDataUrlOnCanvas(canvas, value);
+        openSignatureModal(field, key, value || "");
     });
 
-    return wrap;
+    return box;
 }
 
-function createReadonlySignature(value, uiScale) {
+function createReadonlySignature(value) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
     if (value) {
-        const img = document.createElement("img");
-        img.src = value;
-        img.style.maxWidth = "100%";
-        img.style.maxHeight = "100%";
-        wrap.appendChild(img);
-    } else {
-        wrap.textContent = "";
+        const image = document.createElement("img");
+        image.src = value;
+        image.style.maxWidth = "100%";
+        image.style.maxHeight = "100%";
+        image.style.objectFit = "contain";
+        wrap.appendChild(image);
     }
     return wrap;
 }
 
-function createLabel(field, value, uiScale) {
+function createLabel(value, uiScale) {
     const div = document.createElement("div");
     div.className = "field-label";
     div.textContent = value || "";
@@ -825,19 +943,15 @@ function renderFields() {
     setStageSize();
     overlay.innerHTML = "";
 
-    const naturalW = img.naturalWidth || img.clientWidth;
-    const naturalH = img.naturalHeight || img.clientHeight;
-    const ratioX = img.clientWidth / naturalW;
-    const ratioY = img.clientHeight / naturalH;
-    const uiScale = Math.min(ratioX, ratioY);
+    const { ratioX, ratioY, uiScale } = getCurrentScaleRatios();
 
     (FORM_DEF.fields || []).forEach((field) => {
         if (!field.visible) return;
 
         const key = fieldKey(field);
-        const value = RESOLVED_VALUES[key];
-        const labelValue = LABEL_VALUES[key];
         const editable = isEditable(field);
+        const value = EDIT_STATE[key];
+        const labelValue = LABEL_VALUES[key];
 
         const item = document.createElement("div");
         item.className = "field-item" + (editable ? "" : " readonly");
@@ -849,17 +963,19 @@ function renderFields() {
         let node = null;
 
         if (field.type === "label") {
-            node = createLabel(field, labelValue, uiScale);
+            node = createLabel(labelValue, uiScale);
         } else if (field.type === "text") {
-            node = editable ? createEditableText(field, value, uiScale) : createReadonlyText(field, value, uiScale);
+            node = editable ? createEditableText(field, key, value, uiScale) : createReadonlyText(value, uiScale);
         } else if (field.type === "checkbox") {
-            node = editable ? createEditableCheckbox(field, value, uiScale) : createReadonlyCheckbox(value, uiScale);
+            node = editable ? createEditableCheckbox(field, key, value) : createReadonlyCheckbox(value, uiScale);
         } else if (field.type === "choice_group") {
-            node = editable ? createEditableChoiceGroup(field, value, ratioX, ratioY, uiScale) : createReadonlyChoiceGroup(field, value, ratioX, ratioY, uiScale);
+            node = editable
+                ? createEditableChoiceGroup(field, key, value, ratioX, ratioY, uiScale)
+                : createReadonlyChoiceGroup(field, value, ratioX, ratioY, uiScale);
         } else if (field.type === "signature") {
-            node = editable ? createEditableSignature(field, value, uiScale) : createReadonlySignature(value, uiScale);
+            node = editable ? createEditableSignature(field, key, value, uiScale) : createReadonlySignature(value);
         } else {
-            node = createReadonlyText(field, value, uiScale);
+            node = createReadonlyText(value, uiScale);
         }
 
         item.appendChild(node);
@@ -868,55 +984,10 @@ function renderFields() {
 }
 
 function getCurrentFieldValues() {
-    const result = {};
-
-    (FORM_DEF.fields || []).forEach((field) => {
-        const key = fieldKey(field);
-        if (!isEditable(field)) return;
-
-        if (field.type === "label") return;
-
-        if (field.type === "text") {
-            const el = overlay.querySelector(`[data-field-key="${key}"]`);
-            result[key] = el ? el.value : "";
-            return;
-        }
-
-        if (field.type === "checkbox") {
-            const el = overlay.querySelector(`[data-field-key="${key}"]`);
-            result[key] = el ? !!el.checked : false;
-            return;
-        }
-
-        if (field.type === "choice_group") {
-            const checked = overlay.querySelector(`input[name="cg_${key}"]:checked`);
-            result[key] = checked ? checked.value : "";
-            return;
-        }
-
-        if (field.type === "signature") {
-            const canvas = overlay.querySelector(`canvas[data-field-key="${key}"]`);
-            if (canvas) {
-                const blank = isCanvasBlank(canvas);
-                result[key] = blank ? "" : canvas.toDataURL("image/png");
-            } else {
-                result[key] = "";
-            }
-        }
-    });
-
-    return result;
-}
-
-function isCanvasBlank(canvas) {
-    const temp = document.createElement("canvas");
-    temp.width = canvas.width;
-    temp.height = canvas.height;
-    return canvas.toDataURL() === temp.toDataURL();
+    return JSON.parse(JSON.stringify(EDIT_STATE));
 }
 
 function validateClientSide() {
-    const values = getCurrentFieldValues();
     const missing = [];
 
     (FORM_DEF.fields || []).forEach((field) => {
@@ -925,18 +996,18 @@ function validateClientSide() {
         if (field.type === "label") return;
 
         const key = fieldKey(field);
-        const v = values[key];
+        const value = EDIT_STATE[key];
 
-        if (field.type === "text" && (!v || String(v).trim() === "")) {
+        if (field.type === "text" && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
-        if (field.type === "checkbox" && !v) {
+        if (field.type === "checkbox" && !value) {
             missing.push(field.label || field.field_id);
         }
-        if (field.type === "choice_group" && (!v || String(v).trim() === "")) {
+        if (field.type === "choice_group" && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
-        if (field.type === "signature" && (!v || String(v).trim() === "")) {
+        if (field.type === "signature" && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
     });
@@ -947,16 +1018,18 @@ function validateClientSide() {
 async function saveForm() {
     const missing = validateClientSide();
     if (missing.length > 0) {
-        alert("필수 입력이 누락되었습니다:\\n- " + missing.join("\\n- "));
+        alert("필수 입력이 누락되었습니다.\\n- " + missing.join("\\n- "));
         return { ok: false };
     }
 
     const values = getCurrentFieldValues();
+
     const resp = await fetch(`/api/form/${FORM_DEF.form_id}/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ values })
     });
+
     const data = await resp.json();
 
     if (!resp.ok || !data.ok) {
@@ -1031,66 +1104,238 @@ async function downloadImage() {
     link.click();
 }
 
-function applyInitialMobileZoom() {
-    const vw = window.innerWidth || 400;
-    if (vw <= 480) {
-        zoomRange.value = "85";
-    } else if (vw <= 768) {
-        zoomRange.value = "92";
-    } else {
-        zoomRange.value = "100";
-    }
-    const v = Number(zoomRange.value);
+function setZoom(v) {
+    if (!img.naturalWidth) return;
+    zoomRange.value = String(v);
     zoomLabel.textContent = v + "%";
-    captureArea.style.transform = `scale(${v / 100})`;
+    captureArea.style.width = Math.max(100, Math.round(img.naturalWidth * (v / 100))) + "px";
+
+    requestAnimationFrame(() => {
+        setStageSize();
+        renderFields();
+    });
+}
+
+function applyInitialMobileZoom() {
+    const wrapWidth = stageWrap.clientWidth - 24;
+    if (!img.naturalWidth || wrapWidth <= 0) {
+        setZoom(100);
+        return;
+    }
+
+    const fitPercent = Math.floor((wrapWidth / img.naturalWidth) * 100);
+    const initial = Math.max(55, Math.min(100, fitPercent));
+    setZoom(initial);
+}
+
+function openTextModal(field, key, value) {
+    ACTIVE_TEXT_KEY = key;
+    textModalTitle.textContent = field.label || "텍스트 입력";
+    textModalInput.value = value || "";
+    textModalInput.placeholder = field.placeholder || "";
+    if (field.max_length) {
+        textModalInput.maxLength = field.max_length;
+    } else {
+        textModalInput.removeAttribute("maxLength");
+    }
+    textModal.classList.add("show");
+    setTimeout(() => textModalInput.focus(), 50);
+}
+
+function closeTextModal() {
+    ACTIVE_TEXT_KEY = null;
+    textModal.classList.remove("show");
+}
+
+function fitCanvasResolution(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    return ctx;
+}
+
+function clearSignatureCanvas() {
+    const ctx = fitCanvasResolution(signatureModalCanvas);
+    const rect = signatureModalCanvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+}
+
+function drawDataUrlOnCanvas(canvas, dataUrl) {
+    if (!dataUrl) return;
+    const ctx = fitCanvasResolution(canvas);
+    const rect = canvas.getBoundingClientRect();
+    const image = new Image();
+    image.onload = () => {
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.drawImage(image, 0, 0, rect.width, rect.height);
+    };
+    image.src = dataUrl;
+}
+
+function bindSignatureDrawingOnce() {
+    if (SIGNATURE_DRAW_BOUND) return;
+    SIGNATURE_DRAW_BOUND = true;
+
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function getPos(e) {
+        const rect = signatureModalCanvas.getBoundingClientRect();
+        if (e.touches && e.touches[0]) {
+            return {
+                x: e.touches[0].clientX - rect.left,
+                y: e.touches[0].clientY - rect.top
+            };
+        }
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    function start(e) {
+        drawing = true;
+        const p = getPos(e);
+        lastX = p.x;
+        lastY = p.y;
+        e.preventDefault();
+    }
+
+    function move(e) {
+        if (!drawing) return;
+        const ctx = signatureModalCanvas.getContext("2d");
+        const p = getPos(e);
+        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = "#111";
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        lastX = p.x;
+        lastY = p.y;
+        e.preventDefault();
+    }
+
+    function end(e) {
+        drawing = false;
+        if (e) e.preventDefault();
+    }
+
+    signatureModalCanvas.addEventListener("mousedown", start);
+    signatureModalCanvas.addEventListener("mousemove", move);
+    signatureModalCanvas.addEventListener("mouseup", end);
+    signatureModalCanvas.addEventListener("mouseleave", end);
+    signatureModalCanvas.addEventListener("touchstart", start, { passive: false });
+    signatureModalCanvas.addEventListener("touchmove", move, { passive: false });
+    signatureModalCanvas.addEventListener("touchend", end, { passive: false });
+}
+
+function openSignatureModal(field, key, value) {
+    ACTIVE_SIGNATURE_KEY = key;
+    signatureModalTitle.textContent = field.label || "서명 입력";
+    signatureModal.classList.add("show");
+
+    requestAnimationFrame(() => {
+        fitCanvasResolution(signatureModalCanvas);
+        bindSignatureDrawingOnce();
+        if (value) {
+            drawDataUrlOnCanvas(signatureModalCanvas, value);
+        } else {
+            clearSignatureCanvas();
+        }
+    });
+}
+
+function closeSignatureModal() {
+    ACTIVE_SIGNATURE_KEY = null;
+    signatureModal.classList.remove("show");
+}
+
+function isCanvasBlank(canvas) {
+    const temp = document.createElement("canvas");
+    temp.width = canvas.width;
+    temp.height = canvas.height;
+    return canvas.toDataURL() === temp.toDataURL();
 }
 
 document.getElementById("saveBtn").addEventListener("click", saveForm);
 document.getElementById("downloadBtn").addEventListener("click", downloadImage);
 
 zoomRange.addEventListener("input", () => {
-    const v = Number(zoomRange.value);
-    zoomLabel.textContent = v + "%";
-    captureArea.style.transform = `scale(${v / 100})`;
+    setZoom(Number(zoomRange.value));
 });
 
-img.addEventListener("load", () => {
-    setStageSize();
+document.getElementById("textModalCancel").addEventListener("click", closeTextModal);
+document.getElementById("textModalConfirm").addEventListener("click", () => {
+    if (!ACTIVE_TEXT_KEY) return;
+    EDIT_STATE[ACTIVE_TEXT_KEY] = textModalInput.value || "";
+    closeTextModal();
     renderFields();
-    applyInitialMobileZoom();
-    refreshStatus();
+});
+
+document.getElementById("signatureModalCancel").addEventListener("click", closeSignatureModal);
+document.getElementById("signatureModalClear").addEventListener("click", clearSignatureCanvas);
+document.getElementById("signatureModalConfirm").addEventListener("click", () => {
+    if (!ACTIVE_SIGNATURE_KEY) return;
+    EDIT_STATE[ACTIVE_SIGNATURE_KEY] = isCanvasBlank(signatureModalCanvas)
+        ? ""
+        : signatureModalCanvas.toDataURL("image/png");
+    closeSignatureModal();
+    renderFields();
+});
+
+textModal.addEventListener("click", (e) => {
+    if (e.target === textModal) closeTextModal();
+});
+
+signatureModal.addEventListener("click", (e) => {
+    if (e.target === signatureModal) closeSignatureModal();
 });
 
 window.addEventListener("resize", () => {
-    setStageSize();
-    renderFields();
+    if (!img.naturalWidth) return;
+    const currentZoom = Number(zoomRange.value || "100");
+    setZoom(currentZoom);
 });
+
+function initAfterImageLoad() {
+    initializeState();
+    applyInitialMobileZoom();
+    refreshStatus();
+}
+
+if (img.complete) {
+    initAfterImageLoad();
+} else {
+    img.addEventListener("load", initAfterImageLoad);
+}
 </script>
 </body>
 </html>
 """
-
 
 def get_conn():
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL 환경변수가 설정되지 않았습니다.")
     return psycopg.connect(DATABASE_URL)
 
-
 def get_today_str():
     return date.today().isoformat()
-
 
 def allowed_image_filename(filename: str) -> bool:
     lower = filename.lower()
     return lower.endswith(".jpg") or lower.endswith(".jpeg") or lower.endswith(".png") or lower.endswith(".webp")
 
-
 def make_json_response(ok=True, **kwargs):
     data = {"ok": ok}
     data.update(kwargs)
     return jsonify(data)
-
 
 def init_db():
     sql_list = [
@@ -1154,7 +1399,6 @@ def init_db():
                 cur.execute(sql)
         conn.commit()
 
-
 def load_users():
     if not os.path.exists(USERS_XLSX_PATH):
         raise FileNotFoundError(f"{USERS_XLSX_PATH} 파일을 찾을 수 없습니다.")
@@ -1167,7 +1411,6 @@ def load_users():
 
     df.columns = [str(c).strip() for c in df.columns]
     return df
-
 
 def validate_users_dataframe(df: pd.DataFrame):
     required_columns = [
@@ -1195,7 +1438,6 @@ def validate_users_dataframe(df: pd.DataFrame):
 
     return df
 
-
 def find_user(user_id: str, password: str):
     df = load_users()
     df = validate_users_dataframe(df)
@@ -1221,7 +1463,6 @@ def find_user(user_id: str, password: str):
         "is_admin": row["관리자여부"] == "Y"
     }
 
-
 def get_group_users(group_name: str):
     df = load_users()
     df = validate_users_dataframe(df)
@@ -1242,7 +1483,6 @@ def get_group_users(group_name: str):
     users.sort(key=lambda x: (x["role"], x["slot_index"] if x["slot_index"] is not None else 9999, x["id"]))
     return users
 
-
 def load_form_config():
     if not os.path.exists(FORM_CONFIG_PATH):
         return {"forms": []}
@@ -1255,11 +1495,9 @@ def load_form_config():
 
     return data
 
-
 def save_form_config(config_data):
     with open(FORM_CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(config_data, f, ensure_ascii=False, indent=2)
-
 
 def get_form_by_id(form_id):
     config = load_form_config()
@@ -1267,7 +1505,6 @@ def get_form_by_id(form_id):
         if form.get("form_id") == form_id:
             return form
     return None
-
 
 def get_available_forms_for_user(user):
     config = load_form_config()
@@ -1281,13 +1518,11 @@ def get_available_forms_for_user(user):
         forms.append(form)
     return forms
 
-
 def field_key(field):
     slot_index = field.get("slot_index")
     if slot_index is not None and str(slot_index) != "":
         return f"{field.get('field_id')}__slot_{slot_index}"
     return str(field.get("field_id"))
-
 
 def is_field_editable_for_user(form, field, user):
     if not field.get("visible", True):
@@ -1304,7 +1539,6 @@ def is_field_editable_for_user(form, field, user):
         return str(slot_index) == str(user["slot_index"]) and target_role in ("공통", user["role"])
 
     return target_role in ("공통", user["role"])
-
 
 def get_or_create_document(form, user, work_date=None):
     if not work_date:
@@ -1397,7 +1631,6 @@ def get_or_create_document(form, user, work_date=None):
             conn.commit()
     return doc
 
-
 def sync_group_participants(document_id, group_name):
     users = [u for u in get_group_users(group_name) if not u["is_admin"] and u["role"] in ("작업원", "작업책임자")]
 
@@ -1421,7 +1654,6 @@ def sync_group_participants(document_id, group_name):
                     (document_id, u["id"], u["name"], u["group"], u["role"], u["slot_index"])
                 )
         conn.commit()
-
 
 def fetch_participants(document_id):
     with get_conn() as conn:
@@ -1448,7 +1680,6 @@ def fetch_participants(document_id):
             "is_done": r[5],
         })
     return participants
-
 
 def fetch_document_values(document_id):
     with get_conn() as conn:
@@ -1480,7 +1711,6 @@ def fetch_document_values(document_id):
             "updated_at": str(r[10]),
         })
     return values
-
 
 def resolve_single_field_value(form, field, user, values):
     target = None
@@ -1516,7 +1746,6 @@ def resolve_single_field_value(form, field, user, values):
         return target["value_text"]
     return target["value_text"]
 
-
 def build_resolved_values_map(form, user, values):
     resolved = {}
     for field in form.get("fields", []):
@@ -1526,7 +1755,6 @@ def build_resolved_values_map(form, user, values):
             continue
         resolved[field_key(field)] = resolve_single_field_value(form, field, user, values)
     return resolved
-
 
 def build_label_values_map(form, user, document, participants):
     label_values = {}
@@ -1569,7 +1797,6 @@ def build_label_values_map(form, user, document, participants):
             label_values[key] = field.get("label", "")
     return label_values
 
-
 def validate_submission_for_current_user(form, user, submitted_values):
     missing = []
 
@@ -1600,7 +1827,6 @@ def validate_submission_for_current_user(form, user, submitted_values):
                 missing.append(field.get("label") or field.get("field_id"))
 
     return missing
-
 
 def save_submission(document, form, user, submitted_values):
     editable_fields = [f for f in form.get("fields", []) if is_field_editable_for_user(form, f, user) and f.get("type") != "label"]
@@ -1679,7 +1905,6 @@ def save_submission(document, form, user, submitted_values):
 
         conn.commit()
 
-
 def participant_required_fields(form, participant):
     result = []
     for field in form.get("fields", []):
@@ -1706,7 +1931,6 @@ def participant_required_fields(form, participant):
 
     return result
 
-
 def common_required_fields(form):
     result = []
     if form["form_type"] != "group":
@@ -1724,7 +1948,6 @@ def common_required_fields(form):
             result.append(field)
     return result
 
-
 def field_has_completed_value(form, field, user, all_values):
     val = resolve_single_field_value(form, field, user, all_values)
     if field["type"] == "text":
@@ -1736,7 +1959,6 @@ def field_has_completed_value(form, field, user, all_values):
     if field["type"] == "signature":
         return val is not None and str(val).strip() != ""
     return True
-
 
 def recalc_document_status(document, form, current_user):
     all_values = fetch_document_values(document["id"])
@@ -1826,7 +2048,6 @@ def recalc_document_status(document, form, current_user):
         "missing_common": common_missing,
     }
 
-
 @app.route("/init-db")
 def init_db_route():
     try:
@@ -1834,7 +2055,6 @@ def init_db_route():
         return "DB 초기화 완료"
     except Exception as e:
         return f"DB 초기화 실패: {e}", 500
-
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -1858,7 +2078,6 @@ def home():
 
     return render_template_string(LOGIN_HTML, error=None)
 
-
 @app.route("/dashboard")
 def dashboard():
     user = session.get("user")
@@ -1870,12 +2089,10 @@ def dashboard():
 
     return redirect(url_for("forms_page"))
 
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("home"))
-
 
 @app.route("/admin")
 def admin_page():
@@ -1888,7 +2105,6 @@ def admin_page():
     config = load_form_config()
     forms = config.get("forms", [])
     return render_template_string(ADMIN_HTML, user=user, forms=forms)
-
 
 @app.route("/admin/config", methods=["GET", "POST"])
 def admin_config_page():
@@ -1928,7 +2144,6 @@ def admin_config_page():
         image_files=image_files
     )
 
-
 @app.route("/admin/upload-image", methods=["POST"])
 def admin_upload_image():
     user = session.get("user")
@@ -1949,11 +2164,9 @@ def admin_upload_image():
     file.save(save_path)
     return redirect(url_for("admin_config_page"))
 
-
 @app.route("/form-image/<path:filename>")
 def form_image(filename):
     return send_from_directory(FORMS_FOLDER, filename)
-
 
 @app.route("/forms")
 def forms_page():
@@ -1963,7 +2176,6 @@ def forms_page():
 
     forms = get_available_forms_for_user(user)
     return render_template_string(FORMS_HTML, user=user, forms=forms)
-
 
 @app.route("/form/<form_id>")
 def open_form(form_id):
@@ -2015,7 +2227,6 @@ def open_form(form_id):
         status_json=json.dumps(status, ensure_ascii=False),
     )
 
-
 @app.route("/api/form/<form_id>/save", methods=["POST"])
 def api_save_form(form_id):
     user = session.get("user")
@@ -2063,7 +2274,6 @@ def api_save_form(form_id):
         missing_common=status["missing_common"],
     )
 
-
 @app.route("/api/form/<form_id>/status")
 def api_form_status(form_id):
     user = session.get("user")
@@ -2084,7 +2294,6 @@ def api_form_status(form_id):
         document_status_text=status["document_status_text"],
         missing_common=status["missing_common"],
     )
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
