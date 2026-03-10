@@ -434,19 +434,22 @@ FORM_RUN_HTML = """
             width: 100%;
             height: 100%;
             border: 2px solid #1f6feb;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.94);
+            border-radius: 2px;
+            background: rgba(255,255,255,0.98);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
             user-select: none;
+            padding: 0;
+            font-family: Arial, sans-serif;
         }
 
         .checkbox-box.checked::after {
-            content: "✓";
+            content: "v";
             font-weight: 900;
+            font-size: 1.05em;
+            line-height: 1;
         }
 
         .checkbox-box.required-empty {
@@ -833,8 +836,11 @@ function createEditableCheckbox(field, key, value) {
 function createReadonlyCheckbox(value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
-    wrap.textContent = value ? "☑" : "☐";
-    wrap.style.fontSize = `${Math.max(10, 18 * uiScale)}px`;
+    wrap.textContent = value ? "v" : "";
+    wrap.style.fontSize = `${Math.max(10, 16 * uiScale)}px`;
+    wrap.style.border = "2px solid #1f6feb";
+    wrap.style.borderRadius = "2px";
+    wrap.style.background = "rgba(255,255,255,0.98)";
     return wrap;
 }
 
