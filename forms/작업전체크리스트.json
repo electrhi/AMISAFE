@@ -1,0 +1,703 @@
+{
+  "forms": [
+    {
+      "form_id": "작업전체크리스트",
+      "form_name": "작업전체크리스트",
+      "form_type": "individual",
+      "image_file": "작업전체크리스트.jpg",
+      "active": true,
+      "fields": [
+        {
+          "field_id": "tbm시행",
+          "label": "TBM시행",
+          "type": "choice_group",
+          "x": 856,
+          "y": 499,
+          "width": 12,
+          "height": 12,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 52,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "작업자_전원_참석_안전교육_및_작업내용_숙지",
+          "label": "작업자 전원 참석 안전교육 및 작업내용 숙지",
+          "type": "choice_group",
+          "x": 856,
+          "y": 528,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 52,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "dcu_안전장구착용",
+          "label": "DCU 안전장구착용",
+          "type": "choice_group",
+          "x": 856,
+          "y": 584,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "모뎀_안전장구_착",
+          "label": "모뎀 안전장구 착",
+          "type": "choice_group",
+          "x": 856,
+          "y": 613,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "건강상태_및_승인자",
+          "label": "건강상태 및 승인자",
+          "type": "choice_group",
+          "x": 856,
+          "y": 640,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "작업전_점심후_시행",
+          "label": "작업전 점심후 시행",
+          "type": "choice_group",
+          "x": 856,
+          "y": 668,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "작업안전_체크리스트_점검",
+          "label": "작업안전 체크리스트 점검",
+          "type": "choice_group",
+          "x": 856,
+          "y": 698,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "안내판라바콘_설치",
+          "label": "안내판라바콘 설치",
+          "type": "choice_group",
+          "x": 856,
+          "y": 725,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "교통신호수_배치",
+          "label": "교통신호수 배치",
+          "type": "choice_group",
+          "x": 856,
+          "y": 754,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "고소작업차_안전조",
+          "label": "고소작업차 안전조",
+          "type": "choice_group",
+          "x": 856,
+          "y": 782,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "안전대버켓로프걸이",
+          "label": "안전대버켓로프걸이",
+          "type": "choice_group",
+          "x": 856,
+          "y": 810,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "인터록후방장치",
+          "label": "인터록후방장치",
+          "type": "choice_group",
+          "x": 856,
+          "y": 839,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "고임목아웃트리거",
+          "label": "고임목아웃트리거",
+          "type": "choice_group",
+          "x": 856,
+          "y": 867,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "보행자_통로확보",
+          "label": "보행자 통로확보",
+          "type": "choice_group",
+          "x": 856,
+          "y": 895,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "안전담당자지",
+          "label": "안전담당자지",
+          "type": "choice_group",
+          "x": 856,
+          "y": 924,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "크레인_권과방지장치",
+          "label": "크레인 권과방지장치",
+          "type": "choice_group",
+          "x": 856,
+          "y": 952,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "dcu_설치_및_교체_1",
+          "label": "DCU 설치 및 교체 1",
+          "type": "choice_group",
+          "x": 856,
+          "y": 1002,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "dcu_설치_및_교체_2",
+          "label": "DCU 설치 및 교체 2",
+          "type": "choice_group",
+          "x": 856,
+          "y": 1030,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "모뎀설치1",
+          "label": "모뎀설치1",
+          "type": "choice_group",
+          "x": 856,
+          "y": 1086,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "모뎀설치2",
+          "label": "모뎀설치2",
+          "type": "choice_group",
+          "x": 856,
+          "y": 1115,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "모뎀설치3",
+          "label": "모뎀설치3",
+          "type": "choice_group",
+          "x": 856,
+          "y": 1144,
+          "width": 24,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true,
+          "options": [
+            {
+              "option_label": "확인",
+              "option_value": "confirm",
+              "dx": 0,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            },
+            {
+              "option_label": "해당없음",
+              "option_value": "na",
+              "dx": 53,
+              "dy": 0,
+              "width": 12,
+              "height": 12
+            }
+          ]
+        },
+        {
+          "field_id": "일시",
+          "label": "일시",
+          "type": "text",
+          "x": 156,
+          "y": 1347,
+          "width": 80,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true
+        },
+        {
+          "field_id": "새_필드",
+          "label": "새 필드",
+          "type": "text",
+          "x": 600,
+          "y": 1345,
+          "width": 120,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true
+        },
+        {
+          "field_id": "서명",
+          "label": "서명",
+          "type": "signature",
+          "x": 712,
+          "y": 1345,
+          "width": 80,
+          "height": 24,
+          "required": false,
+          "target_role": "공통",
+          "slot_index": null,
+          "visible": true
+        }
+      ]
+    }
+  ]
+}
