@@ -80,16 +80,111 @@ ADMIN_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AMISAFE 관리자</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 0; }
-        .wrap { max-width: 1100px; margin: 40px auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 0; color: #1f2937; }
+        .wrap { max-width: 1280px; margin: 24px auto; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
         h2, h3 { margin-top: 0; }
-        .box { margin-top: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
-        .menu a { display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 10px 14px; background: #1f6feb; color: white; text-decoration: none; border-radius: 8px; }
+        .box { margin-top: 18px; padding: 18px; border: 1px solid #e5e7eb; border-radius: 14px; background: #f8fafc; }
+        .menu a, .menu button {
+            display: inline-block; margin-right: 10px; margin-bottom: 10px; padding: 10px 14px;
+            background: #1f6feb; color: white; text-decoration: none; border-radius: 10px; border: 0; cursor: pointer;
+        }
         .menu a.gray { background: #6b7280; }
+
+        .filter-row {
+            display: flex; flex-wrap: wrap; gap: 12px; align-items: end;
+        }
+        .filter-row label {
+            display: flex; flex-direction: column; gap: 6px; font-weight: bold;
+        }
+        .filter-row input[type="date"] {
+            padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; background: white;
+        }
+
+        .admin-grid-wrap {
+            overflow: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: white;
+        }
+        table.admin-grid {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 980px;
+        }
+        .admin-grid th, .admin-grid td {
+            border-bottom: 1px solid #eef2f7;
+            border-right: 1px solid #f1f5f9;
+            padding: 12px 10px;
+            vertical-align: top;
+            text-align: center;
+        }
+        .admin-grid th:first-child,
+        .admin-grid td:first-child {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background: #fff;
+            z-index: 2;
+        }
+        .admin-grid th {
+            background: #f8fafc;
+            font-size: 14px;
+        }
+        .user-name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .user-meta {
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .form-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            text-decoration: none;
+            color: #111827;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+        .form-link:hover {
+            color: #1f6feb;
+        }
+        .status-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            flex: 0 0 14px;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75), 0 0 0 1px rgba(0,0,0,0.08);
+        }
+        .status-dot.done { background: #16a34a; }
+        .status-dot.not-done { background: #dc2626; }
+        .status-dot.no-doc { background: #cbd5e1; }
+
+        .legend {
+            display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: #475569;
+        }
+        .legend-item { display: inline-flex; align-items: center; gap: 8px; }
+
+        .empty-note {
+            color: #64748b;
+            font-size: 14px;
+        }
+
         .form-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 12px; background: white; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-left: 8px; }
         .badge.group { background: #e8f0fe; color: #1a73e8; }
         .badge.individual { background: #e6f4ea; color: #188038; }
+
+        @media (max-width: 768px) {
+            .wrap { margin: 10px; padding: 14px; border-radius: 12px; }
+            .admin-grid th, .admin-grid td { padding: 10px 8px; }
+            .form-link { font-size: 13px; }
+        }
     </style>
 </head>
 <body>
@@ -105,6 +200,76 @@ ADMIN_HTML = """
                 <a href="/admin/config">양식 JSON 편집</a>
                 <a class="gray" href="/logout">로그아웃</a>
             </div>
+        </div>
+
+        <div class="box">
+            <h3>날짜별 제출 현황</h3>
+            <form method="get" action="/admin" class="filter-row">
+                <label>
+                    조회 날짜
+                    <input type="date" name="work_date" value="{{ selected_date }}">
+                </label>
+                <button type="submit">조회</button>
+            </form>
+
+            <div class="legend">
+                <div class="legend-item"><span class="status-dot done"></span> 작성 완료</div>
+                <div class="legend-item"><span class="status-dot not-done"></span> 미작성 / 미완료</div>
+                <div class="legend-item"><span class="status-dot no-doc"></span> 문서 없음</div>
+            </div>
+
+            {% if status_rows and forms %}
+            <div class="admin-grid-wrap" style="margin-top:14px;">
+                <table class="admin-grid">
+                    <thead>
+                        <tr>
+                            <th style="min-width:220px;">사용자</th>
+                            {% for form in forms %}
+                                <th>
+                                    {{ form.form_name }}
+                                    {% if form.form_type == 'group' %}
+                                        <span class="badge group">공동</span>
+                                    {% else %}
+                                        <span class="badge individual">개인</span>
+                                    {% endif %}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in status_rows %}
+                        <tr>
+                            <td>
+                                <div class="user-name">{{ row.user.name }}</div>
+                                <div class="user-meta">
+                                    ID: {{ row.user.id }}<br>
+                                    조: {{ row.user.group }} / 구분: {{ row.user.role }} / 슬롯: {{ row.user.slot_index }}
+                                </div>
+                            </td>
+
+                            {% for item in row.form_items %}
+                            <td>
+                                {% if item.open_url %}
+                                    <a class="form-link" href="{{ item.open_url }}">
+                                        <span class="status-dot {{ item.dot_class }}"></span>
+                                        <span>{{ item.form_name }}</span>
+                                    </a>
+                                {% else %}
+                                    <div class="form-link" style="cursor:default;">
+                                        <span class="status-dot {{ item.dot_class }}"></span>
+                                        <span>{{ item.form_name }}</span>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="empty-note">표시할 사용자 또는 양식이 없습니다.</p>
+            {% endif %}
         </div>
 
         <div class="box">
@@ -431,32 +596,69 @@ FORM_RUN_HTML = """
         }
 
         .checkbox-box {
-            width: 100%;
-            height: 100%;
-            border: 2px solid #1f6feb;
-            border-radius: 2px;
-            background: rgba(255,255,255,0.98);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
+    width: 100%;
+    height: 100%;
+    border: 2px solid #94a3b8;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    padding: 0;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    transition: all 0.16s ease;
+    -webkit-tap-highlight-color: transparent;
+}
 
-        .checkbox-box.checked::after {
-            content: "v";
-            font-weight: 900;
-            font-size: 1.05em;
-            line-height: 1;
-        }
+.checkbox-box::after {
+    content: "";
+    width: 34%;
+    height: 58%;
+    border-right: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    transform: rotate(45deg) scale(0.7);
+    margin-top: -6%;
+    transition: all 0.14s ease;
+}
 
-        .checkbox-box.required-empty {
-            border-color: #d93025;
-            background: rgba(255, 244, 244, 0.95);
-        }
+.checkbox-box.checked {
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28);
+}
 
+.checkbox-box.checked::after {
+    border-right-color: #ffffff;
+    border-bottom-color: #ffffff;
+    transform: rotate(45deg) scale(1);
+}
+
+.checkbox-box.required-empty {
+    border-color: #ef4444;
+    background: linear-gradient(180deg, #fff5f5 0%, #ffe8e8 100%);
+}
+
+.checkbox-box:active {
+    transform: scale(0.96);
+}
+
+@media (max-width: 768px) {
+    .checkbox-box {
+        border-width: 2.5px;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+    }
+
+    .checkbox-box::after {
+        border-right-width: 3.5px;
+        border-bottom-width: 3.5px;
+    }
+}
+
+        
         .choice-group {
             width: 100%;
             height: 100%;
@@ -633,11 +835,15 @@ FORM_RUN_HTML = """
             <div class="small">양식유형: {{ form.form_type }} / 문서상태: <span id="statusText">{{ doc_status }}</span></div>
         </div>
         <div>
-            <button class="btn" id="saveBtn" type="button">저장</button>
-            <button class="btn green" id="downloadBtn" type="button">다운로드</button>
-            <a class="btn gray" href="/forms">목록</a>
-            <a class="btn gray" href="/logout">로그아웃</a>
-        </div>
+    {% if doc_json and '"admin_view": true' in doc_json %}
+        <a class="btn gray" href="/admin?work_date={{ work_date }}">관리자 목록</a>
+    {% else %}
+        <button class="btn" id="saveBtn" type="button">저장</button>
+        <button class="btn green" id="downloadBtn" type="button">다운로드</button>
+        <a class="btn gray" href="/forms">목록</a>
+    {% endif %}
+    <a class="btn gray" href="/logout">로그아웃</a>
+</div>
     </div>
 
     <div class="info-box">
@@ -695,6 +901,7 @@ const DOC_META = {{ doc_json|safe }};
 const RESOLVED_VALUES = {{ resolved_values_json|safe }};
 const LABEL_VALUES = {{ label_values_json|safe }};
 let CURRENT_STATUS = {{ status_json|safe }};
+const ADMIN_VIEW = !!(DOC_META && DOC_META.admin_view);
 
 const img = document.getElementById("formImage");
 const overlay = document.getElementById("overlay");
@@ -725,7 +932,9 @@ function fieldKey(field) {
 }
 
 function isEditable(field) {
+    if (ADMIN_VIEW) return false;
     if (!field.visible) return false;
+
     const targetRole = field.target_role || "공통";
 
     if (FORM_DEF.form_type === "individual") {
@@ -816,13 +1025,17 @@ function createEditableText(field, key, value, uiScale) {
     return btn;
 }
 
-function createEditableCheckbox(field, key, value) {
+function createEditableCheckbox(field, key, value, uiScale) {
     const box = document.createElement("button");
     box.type = "button";
     box.className = "checkbox-box";
     if (value) box.classList.add("checked");
     if (field.required && !value) box.classList.add("required-empty");
     box.dataset.fieldKey = key;
+
+    const minSize = window.innerWidth <= 768 ? 28 : 22;
+    box.style.minWidth = `${minSize}px`;
+    box.style.minHeight = `${minSize}px`;
 
     box.addEventListener("click", (e) => {
         e.preventDefault();
@@ -835,14 +1048,13 @@ function createEditableCheckbox(field, key, value) {
 
 function createReadonlyCheckbox(value, uiScale) {
     const wrap = document.createElement("div");
-    wrap.className = "readonly-box";
-    wrap.textContent = value ? "v" : "";
-    wrap.style.fontSize = `${Math.max(10, 16 * uiScale)}px`;
-    wrap.style.border = "2px solid #1f6feb";
-    wrap.style.borderRadius = "2px";
-    wrap.style.background = "rgba(255,255,255,0.98)";
+    wrap.className = "checkbox-box" + (value ? " checked" : "");
+    wrap.style.cursor = "default";
+    wrap.style.minWidth = `${Math.max(18, 22 * uiScale)}px`;
+    wrap.style.minHeight = `${Math.max(18, 22 * uiScale)}px`;
     return wrap;
 }
+
 
 function createEditableChoiceGroup(field, key, value, ratioX, ratioY, uiScale) {
     const wrap = document.createElement("div");
@@ -973,7 +1185,7 @@ function renderFields() {
         } else if (field.type === "text") {
             node = editable ? createEditableText(field, key, value, uiScale) : createReadonlyText(value, uiScale);
         } else if (field.type === "checkbox") {
-            node = editable ? createEditableCheckbox(field, key, value) : createReadonlyCheckbox(value, uiScale);
+        node = editable ? createEditableCheckbox(field, key, value, uiScale) : createReadonlyCheckbox(value, uiScale);
         } else if (field.type === "choice_group") {
             node = editable
                 ? createEditableChoiceGroup(field, key, value, ratioX, ratioY, uiScale)
@@ -1270,8 +1482,13 @@ function isCanvasBlank(canvas) {
     return canvas.toDataURL() === temp.toDataURL();
 }
 
-document.getElementById("saveBtn").addEventListener("click", saveForm);
-document.getElementById("downloadBtn").addEventListener("click", downloadImage);
+const saveBtn = document.getElementById("saveBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+
+if (!ADMIN_VIEW) {
+    if (saveBtn) saveBtn.addEventListener("click", saveForm);
+    if (downloadBtn) downloadBtn.addEventListener("click", downloadImage);
+}
 
 zoomRange.addEventListener("input", () => {
     setZoom(Number(zoomRange.value));
@@ -1488,6 +1705,125 @@ def get_group_users(group_name: str):
 
     users.sort(key=lambda x: (x["role"], x["slot_index"] if x["slot_index"] is not None else 9999, x["id"]))
     return users
+
+def get_all_active_non_admin_users():
+    df = load_users()
+    df = validate_users_dataframe(df)
+    df["사용여부"] = df["사용여부"].str.upper()
+    df["관리자여부"] = df["관리자여부"].str.upper()
+
+    active_df = df[(df["사용여부"] == "Y") & (df["관리자여부"] != "Y")].copy()
+
+    users = []
+    for _, row in active_df.iterrows():
+        users.append({
+            "id": row["ID"],
+            "name": row["이름"],
+            "group": row["조"],
+            "role": row["구분"],
+            "slot_index": int(row["슬롯순서"]) if str(row["슬롯순서"]).strip() else None,
+            "is_admin": False,
+        })
+
+    users.sort(key=lambda x: (
+        x["group"],
+        x["role"],
+        x["slot_index"] if x["slot_index"] is not None else 9999,
+        x["id"]
+    ))
+    return users
+
+
+def find_existing_document(form, target_user, work_date):
+    form_id = form["form_id"]
+    form_type = form["form_type"]
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            if form_type == "group":
+                cur.execute(
+                    """
+                    SELECT id, form_id, form_type, group_name, user_id, work_date, status
+                    FROM documents
+                    WHERE form_id = %s AND form_type = 'group' AND group_name = %s AND work_date = %s
+                    """,
+                    (form_id, target_user["group"], work_date)
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT id, form_id, form_type, group_name, user_id, work_date, status
+                    FROM documents
+                    WHERE form_id = %s AND form_type = 'individual' AND user_id = %s AND work_date = %s
+                    """,
+                    (form_id, target_user["id"], work_date)
+                )
+
+            row = cur.fetchone()
+
+    if not row:
+        return None
+
+    return {
+        "id": row[0],
+        "form_id": row[1],
+        "form_type": row[2],
+        "group_name": row[3],
+        "user_id": row[4],
+        "work_date": str(row[5]),
+        "status": row[6],
+    }
+
+
+def build_admin_status_rows(forms, work_date):
+    rows = []
+    users = get_all_active_non_admin_users()
+
+    for target_user in users:
+        form_items = []
+
+        for form in forms:
+            allowed_roles = form.get("allowed_roles", [])
+            if allowed_roles and target_user["role"] not in allowed_roles:
+                form_items.append({
+                    "form_id": form["form_id"],
+                    "form_name": form["form_name"],
+                    "open_url": None,
+                    "dot_class": "no-doc",
+                })
+                continue
+
+            doc = find_existing_document(form, target_user, work_date)
+
+            if doc:
+                status_done = doc.get("status") == "completed"
+                open_url = url_for(
+                    "admin_open_form",
+                    form_id=form["form_id"],
+                    target_user_id=target_user["id"],
+                    work_date=work_date
+                )
+                dot_class = "done" if status_done else "not-done"
+            else:
+                open_url = None
+                dot_class = "no-doc"
+
+            form_items.append({
+                "form_id": form["form_id"],
+                "form_name": form["form_name"],
+                "open_url": open_url,
+                "dot_class": dot_class,
+            })
+
+        if form_items:
+            rows.append({
+                "user": target_user,
+                "form_items": form_items,
+            })
+
+    return rows
+
+
 
 def load_form_config():
     if not os.path.exists(FORM_CONFIG_PATH):
@@ -2108,9 +2444,19 @@ def admin_page():
     if not user.get("is_admin"):
         return "관리자만 접근 가능합니다.", 403
 
+    selected_date = request.args.get("work_date", "").strip() or get_today_str()
+
     config = load_form_config()
-    forms = config.get("forms", [])
-    return render_template_string(ADMIN_HTML, user=user, forms=forms)
+    forms = [f for f in config.get("forms", []) if f.get("active", False)]
+    status_rows = build_admin_status_rows(forms, selected_date)
+
+    return render_template_string(
+        ADMIN_HTML,
+        user=user,
+        forms=forms,
+        selected_date=selected_date,
+        status_rows=status_rows,
+    )
 
 @app.route("/admin/config", methods=["GET", "POST"])
 def admin_config_page():
@@ -2232,6 +2578,65 @@ def open_form(form_id):
         label_values_json=json.dumps(label_values, ensure_ascii=False),
         status_json=json.dumps(status, ensure_ascii=False),
     )
+
+@app.route("/admin/open/<form_id>/<target_user_id>/<work_date>")
+def admin_open_form(form_id, target_user_id, work_date):
+    viewer = session.get("user")
+    if not viewer:
+        return redirect(url_for("home"))
+    if not viewer.get("is_admin"):
+        return "관리자만 접근 가능합니다.", 403
+
+    form = get_form_by_id(form_id)
+    if not form:
+        return "양식을 찾을 수 없습니다.", 404
+
+    target_user = next((u for u in get_all_active_non_admin_users() if u["id"] == target_user_id), None)
+    if not target_user:
+        return "대상 사용자를 찾을 수 없습니다.", 404
+
+    allowed_roles = form.get("allowed_roles", [])
+    if allowed_roles and target_user["role"] not in allowed_roles:
+        return "이 사용자는 해당 양식 대상이 아닙니다.", 403
+
+    document = find_existing_document(form, target_user, work_date)
+    if not document:
+        return "선택한 날짜에 작성된 문서가 없습니다.", 404
+
+    if form["form_type"] == "group":
+        sync_group_participants(document["id"], target_user["group"])
+
+    participants = fetch_participants(document["id"])
+    values = fetch_document_values(document["id"])
+    status = recalc_document_status(document, form, target_user)
+
+    resolved_values = build_resolved_values_map(form, target_user, values)
+    label_values = build_label_values_map(form, target_user, document, participants)
+    image_url = url_for("form_image", filename=form.get("image_file", ""))
+
+    return render_template_string(
+        FORM_RUN_HTML,
+        user=target_user,
+        form=form,
+        image_url=image_url,
+        document_id=document["id"],
+        work_date=document["work_date"],
+        doc_status=status["document_status_text"],
+        form_json=json.dumps(form, ensure_ascii=False),
+        user_json=json.dumps(target_user, ensure_ascii=False),
+        doc_json=json.dumps({
+            "document_id": document["id"],
+            "work_date": document["work_date"],
+            "group_name": document.get("group_name"),
+            "user_id": document.get("user_id"),
+            "admin_view": True,
+        }, ensure_ascii=False),
+        resolved_values_json=json.dumps(resolved_values, ensure_ascii=False),
+        label_values_json=json.dumps(label_values, ensure_ascii=False),
+        status_json=json.dumps(status, ensure_ascii=False),
+    )
+
+
 
 @app.route("/api/form/<form_id>/save", methods=["POST"])
 def api_save_form(form_id):
