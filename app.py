@@ -1534,7 +1534,7 @@ function getNextDownloadFilename() {
     return filename;
 }
 
-async async function downloadImage() {
+async function downloadImage() {
     const saveResult = await saveForm();
     if (!saveResult.ok) return;
 
