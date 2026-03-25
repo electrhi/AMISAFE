@@ -1818,7 +1818,7 @@ function bindSignatureDrawingOnce() {
         if (!drawing) return;
         const ctx = signatureModalCanvas.getContext("2d");
         const p = getPos(e);
-        ctx.lineWidth = 2.2;
+        ctx.lineWidth = 4.4;
         ctx.strokeStyle = "#111";
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
