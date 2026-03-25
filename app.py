@@ -181,16 +181,19 @@ ADMIN_HTML = """
         }
 
         .status-dot {
-            width: 14px;
-            height: 14px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             display: inline-block;
-            flex: 0 0 14px;
+            flex: 0 0 16px;
             box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75), 0 0 0 1px rgba(0,0,0,0.08);
         }
         .status-dot.done { background: #16a34a; }
         .status-dot.not-done { background: #dc2626; }
         .status-dot.no-doc { background: #cbd5e1; }
+
+        .desktop-only { display: block; }
+        .mobile-only { display: none; }
 
         .admin-grid-wrap {
             overflow: auto;
@@ -255,6 +258,62 @@ ADMIN_HTML = """
             color: #1d4ed8;
         }
 
+        .mobile-status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .mobile-user-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        }
+        .mobile-user-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+        .mobile-user-meta {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .mobile-form-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .mobile-form-item,
+        .mobile-form-item:visited {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            text-decoration: none;
+            color: #111827;
+            font-weight: 700;
+            min-height: unset;
+            height: auto;
+        }
+        .mobile-form-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .mobile-form-name {
+            word-break: keep-all;
+            line-height: 1.35;
+        }
+
         .group-board {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -271,7 +330,7 @@ ADMIN_HTML = """
             font-size: 16px;
         }
         .dropzone {
-            min-height: 90px;
+            min-height: 70px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -280,7 +339,7 @@ ADMIN_HTML = """
             background: white;
             border: 1px solid #dbe5ef;
             border-radius: 14px;
-            padding: 12px;
+            padding: 10px 12px;
             cursor: grab;
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
         }
@@ -328,6 +387,35 @@ ADMIN_HTML = """
             .card { border-radius: 14px; padding: 14px; }
             .btn { height: 40px; padding: 0 12px; font-size: 14px; }
             .filter-row input[type="date"] { width: 100%; }
+            .desktop-only { display: none; }
+            .mobile-only { display: block; }
+            .legend {
+                gap: 10px;
+                font-size: 12px;
+                align-items: center;
+            }
+            .legend-item {
+                gap: 6px;
+                white-space: nowrap;
+            }
+            .group-board {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .group-col {
+                padding: 12px;
+                border-radius: 14px;
+            }
+            .member-card {
+                padding: 10px 12px;
+                border-radius: 12px;
+            }
+            .member-name {
+                font-size: 16px;
+            }
+            .member-id {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -338,7 +426,7 @@ ADMIN_HTML = """
             <div class="sub">{{ user.name }} 님으로 로그인됨</div>
             <div class="top-actions">
                 <a class="btn" href="/admin">제출 현황</a>
-                <a class="btn green" href="/admin#group-board">조편성</a>
+                <a class="btn green" href="#group-board">조편성</a>
                 <a class="btn gray" href="/logout">로그아웃</a>
             </div>
         </div>
@@ -359,45 +447,79 @@ ADMIN_HTML = """
                 <div class="legend-item"><span class="status-dot no-doc"></span> 대상 아님 / 문서 없음</div>
             </div>
 
-            <div class="admin-grid-wrap">
-                <table class="admin-grid">
-                    <thead>
-                        <tr>
-                            <th>사용자</th>
-                            {% for form in forms %}
-                                <th>{{ form.form_name }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in status_rows %}
-                        <tr>
-                            <td>
-                                <div class="user-name">{{ row.user.name }}</div>
-                                <div class="user-meta">
-                                    ID: {{ row.user.id }}<br>
-                                    조: {{ row.user.group }} / 구분: {{ row.user.role }} / 슬롯: {{ row.user.slot_index }}
-                                </div>
-                            </td>
-                            {% for item in row.form_items %}
-                            <td>
-                                {% if item.open_url %}
-                                    <a class="form-link" href="{{ item.open_url }}">
-                                        <span class="status-dot {{ item.dot_class }}"></span>
-                                        <span>{{ item.form_name }}</span>
-                                    </a>
-                                {% else %}
-                                    <div class="form-link" style="cursor:default;">
-                                        <span class="status-dot {{ item.dot_class }}"></span>
-                                        <span>{{ item.form_name }}</span>
+            <div class="desktop-only">
+                <div class="admin-grid-wrap">
+                    <table class="admin-grid">
+                        <thead>
+                            <tr>
+                                <th>사용자</th>
+                                {% for form in forms %}
+                                    <th>{{ form.form_name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in status_rows %}
+                            <tr>
+                                <td>
+                                    <div class="user-name">{{ row.user.group }}조 · {{ row.user.name }}</div>
+                                    <div class="user-meta">
+                                        ID: {{ row.user.id }}<br>
+                                        구분: {{ row.user.role }} / 슬롯: {{ row.user.slot_index }}
                                     </div>
-                                {% endif %}
-                            </td>
+                                </td>
+                                {% for item in row.form_items %}
+                                <td>
+                                    {% if item.open_url %}
+                                        <a class="form-link" href="{{ item.open_url }}">
+                                            <span class="status-dot {{ item.dot_class }}"></span>
+                                            <span>{{ item.form_name }}</span>
+                                        </a>
+                                    {% else %}
+                                        <div class="form-link" style="cursor:default;">
+                                            <span class="status-dot {{ item.dot_class }}"></span>
+                                            <span>{{ item.form_name }}</span>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
                             {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mobile-only">
+                <div class="mobile-status-list">
+                    {% for row in status_rows %}
+                    <div class="mobile-user-card">
+                        <div class="mobile-user-title">{{ row.user.group }}조 · {{ row.user.name }}</div>
+                        <div class="mobile-user-meta">
+                            ID: {{ row.user.id }} / {{ row.user.role }} / 슬롯 {{ row.user.slot_index }}
+                        </div>
+                        <div class="mobile-form-list">
+                            {% for item in row.form_items %}
+                                {% if item.open_url %}
+                                <a class="mobile-form-item" href="{{ item.open_url }}">
+                                    <div class="mobile-form-left">
+                                        <span class="status-dot {{ item.dot_class }}"></span>
+                                        <span class="mobile-form-name">{{ item.form_name }}</span>
+                                    </div>
+                                </a>
+                                {% else %}
+                                <div class="mobile-form-item">
+                                    <div class="mobile-form-left">
+                                        <span class="status-dot {{ item.dot_class }}"></span>
+                                        <span class="mobile-form-name">{{ item.form_name }}</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
@@ -414,7 +536,7 @@ ADMIN_HTML = """
                              data-role="{{ m.role }}"
                              data-slot-index="{{ m.slot_index }}">
                             <div class="member-top">
-                                <div class="member-name">{{ m.name }}</div>
+                                <div class="member-name">{{ m.group }}조 · {{ m.name }}</div>
                                 <div class="pill">{{ m.role }}</div>
                             </div>
                             <div class="member-id">{{ m.id }} / 슬롯 {{ m.slot_index }}</div>
@@ -475,127 +597,6 @@ ADMIN_HTML = """
 </body>
 </html>
 """
-
-ADMIN_CONFIG_HTML = """
-<!doctype html>
-<html lang="ko">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AMISAFE 양식 설정 편집</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 0; }
-        .wrap { max-width: 1100px; margin: 40px auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-        .box { margin-top: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
-        textarea { width: 100%; min-height: 420px; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; padding: 12px; font-family: Consolas, monospace; }
-        button, a.btn { display: inline-block; padding: 10px 14px; background: #1f6feb; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; margin-right: 8px; }
-        a.gray { background: #6b7280; }
-        .success { color: #0b8043; margin-bottom: 10px; }
-        .error { color: #d93025; margin-bottom: 10px; }
-    </style>
-</head>
-<body>
-    <div class="wrap">
-        <h2>양식 설정 JSON 편집</h2>
-
-        <div class="box">
-            {% if success %}
-                <div class="success">{{ success }}</div>
-            {% endif %}
-            {% if error %}
-                <div class="error">{{ error }}</div>
-            {% endif %}
-
-            <form method="post">
-                <textarea name="config_text">{{ config_text }}</textarea>
-                <div style="margin-top:12px;">
-                    <button type="submit">JSON 저장</button>
-                    <a class="btn gray" href="/admin">뒤로</a>
-                </div>
-            </form>
-        </div>
-
-        <div class="box">
-            <h3>양식 이미지 업로드</h3>
-            <form method="post" action="/admin/upload-image" enctype="multipart/form-data">
-                <input type="file" name="image_file" accept=".jpg,.jpeg,.png,.webp" required>
-                <button type="submit">업로드</button>
-            </form>
-
-            {% if image_files %}
-                <div style="margin-top:14px;">
-                    <strong>현재 forms 폴더 파일</strong>
-                    <ul>
-                    {% for f in image_files %}
-                        <li>{{ f }}</li>
-                    {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
-"""
-
-FORMS_HTML = """
-<!doctype html>
-<html lang="ko">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AMISAFE 양식 목록</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 0; }
-        .wrap { max-width: 1000px; margin: 40px auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-        h2 { margin-top: 0; }
-        .user-box { padding: 16px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; margin-bottom: 20px; }
-        .form-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; background: #fff; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-left: 8px; }
-        .badge.group { background: #e8f0fe; color: #1a73e8; }
-        .badge.individual { background: #e6f4ea; color: #188038; }
-        .btn { display: inline-block; padding: 10px 14px; background: #1f6feb; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px; }
-        .logout { display: inline-block; margin-top: 20px; color: #6b7280; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="wrap">
-        <h2>내 양식 목록</h2>
-
-        <div class="user-box">
-            <div><strong>ID:</strong> {{ user.id }}</div>
-            <div><strong>이름:</strong> {{ user.name }}</div>
-            <div><strong>조:</strong> {{ user.group }}</div>
-            <div><strong>구분:</strong> {{ user.role }}</div>
-            <div><strong>슬롯순서:</strong> {{ user.slot_index }}</div>
-        </div>
-
-        {% if forms %}
-            {% for form in forms %}
-            <div class="form-card">
-                <div>
-                    <strong>{{ form.form_name }}</strong>
-                    {% if form.form_type == 'group' %}
-                        <span class="badge group">공동양식</span>
-                    {% else %}
-                        <span class="badge individual">개인양식</span>
-                    {% endif %}
-                </div>
-                <div style="margin-top:8px;">설명: {{ form.description }}</div>
-                <div style="margin-top:8px;">이미지: {{ form.image_file }}</div>
-                <a class="btn" href="/form/{{ form.form_id }}">열기</a>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p>표시할 양식이 없습니다.</p>
-        {% endif %}
-
-        <a class="logout" href="/logout">로그아웃</a>
-    </div>
-</body>
-</html>
-"""
-
 FORM_RUN_HTML = """
 <!doctype html>
 <html lang="ko">
@@ -1534,7 +1535,7 @@ function getNextDownloadFilename() {
     return filename;
 }
 
-async function downloadImage() {
+async async function downloadImage() {
     const saveResult = await saveForm();
     if (!saveResult.ok) return;
 
@@ -2000,20 +2001,28 @@ def get_group_map():
 
 
 def save_users_dataframe(df):
+    safe_df = df.copy()
+    for col in safe_df.columns:
+        safe_df[col] = safe_df[col].astype("string")
+
     with pd.ExcelWriter(USERS_XLSX_PATH, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-        df.to_excel(writer, sheet_name=USERS_SHEET_NAME, index=False)
+        safe_df.to_excel(writer, sheet_name=USERS_SHEET_NAME, index=False)
 
 
 def apply_group_assignments(assignments):
     df = load_users()
-    df = validate_users_dataframe(df)
+    df = validate_users_dataframe(df).copy()
+
+    for col in ["ID", "이름", "조", "구분", "슬롯순서", "관리자여부", "사용여부"]:
+        if col in df.columns:
+            df[col] = df[col].astype("string")
 
     id_to_idx = {str(row["ID"]).strip(): idx for idx, row in df.iterrows()}
 
     for item in assignments:
         user_id = str(item.get("user_id", "")).strip()
         group_name = str(item.get("group", "")).strip()
-        slot_index = int(item.get("slot_index", 0) or 0)
+        slot_index = str(item.get("slot_index", "")).strip()
 
         if user_id not in id_to_idx:
             continue
@@ -2023,7 +2032,6 @@ def apply_group_assignments(assignments):
         df.at[idx, "슬롯순서"] = slot_index
 
     save_users_dataframe(df)
-
 
 def find_existing_document(form, target_user, work_date):
     form_id = form["form_id"]
