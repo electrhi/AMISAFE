@@ -655,7 +655,6 @@ FORMS_HTML = """
             cursor: pointer;
         }
         .btn.gray { background: #64748b; }
-
         .card {
             margin-top: 16px;
             background: white;
@@ -667,13 +666,11 @@ FORMS_HTML = """
             margin: 0 0 14px 0;
             font-size: 20px;
         }
-
         .form-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 14px;
         }
-
         .form-card {
             display: block;
             text-decoration: none;
@@ -685,26 +682,22 @@ FORMS_HTML = """
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
             transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
         }
-
         .form-card:hover {
             transform: translateY(-2px);
             border-color: #bfdbfe;
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
         }
-
         .form-title {
             font-size: 18px;
             font-weight: 800;
             margin-bottom: 8px;
             line-height: 1.35;
         }
-
         .form-meta {
             color: #64748b;
             font-size: 13px;
             line-height: 1.55;
         }
-
         .badge {
             display: inline-flex;
             align-items: center;
@@ -715,15 +708,8 @@ FORMS_HTML = """
             font-weight: 800;
             margin-bottom: 10px;
         }
-        .badge.group {
-            background: #e0ecff;
-            color: #1d4ed8;
-        }
-        .badge.individual {
-            background: #e8f7ee;
-            color: #15803d;
-        }
-
+        .badge.group { background: #e0ecff; color: #1d4ed8; }
+        .badge.individual { background: #e8f7ee; color: #15803d; }
         .empty-box {
             padding: 24px;
             border: 1px dashed #cbd5e1;
@@ -732,7 +718,6 @@ FORMS_HTML = """
             color: #64748b;
             background: #f8fafc;
         }
-
         @media (max-width: 768px) {
             .wrap { padding: 0 8px 18px; }
             .page-head { border-radius: 14px; padding: 14px; }
@@ -792,10 +777,14 @@ FORM_RUN_HTML = """
 <html lang="ko">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1, user-scalable=yes">
     <title>{{ form.form_name }}</title>
     <style>
         * { box-sizing: border-box; }
+        html, body {
+            touch-action: manipulation;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background: #f5f7fb;
@@ -847,21 +836,6 @@ FORM_RUN_HTML = """
         }
 
         #statusText { font-weight: bold; }
-
-        .tools {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            margin: 10px 0 14px 0;
-        }
-
-        .tools input[type="range"] {
-            vertical-align: middle;
-            width: 240px;
-            max-width: 60vw;
-        }
-
         .small {
             color: #666;
             font-size: 13px;
@@ -873,19 +847,20 @@ FORM_RUN_HTML = """
             background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
             padding: 12px;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-x pan-y;
+            touch-action: pan-x pan-y pinch-zoom;
         }
 
         .stage {
             position: relative;
-            display: inline-block;
-            transform-origin: top left;
+            display: block;
+            width: 100%;
             line-height: 0;
         }
 
         .stage img {
             display: block;
             width: 100%;
+            max-width: 100%;
             height: auto;
             user-select: none;
             -webkit-user-drag: none;
@@ -1283,14 +1258,7 @@ FORM_RUN_HTML = """
         <div><strong>작업일자:</strong> {{ work_date }} / <strong>문서 ID:</strong> {{ document_id }}</div>
         <div class="small">공동양식은 같은 조가 한 장을 공유합니다. 개인양식은 본인 것만 저장합니다.</div>
     </div>
-
-    <div class="tools">
-        <label>배율:
-            <input type="range" id="zoomRange" min="50" max="200" value="100">
-            <span id="zoomLabel">100%</span>
-        </label>
-        <div class="small">모바일에서는 칸을 직접 편집하지 않고, 칸을 누르면 큰 입력창이 열립니다.</div>
-    </div>
+    <div class="small" style="margin: 10px 0 14px 0;">모바일에서는 손가락 두 개로 확대/축소하고, 칸을 누르면 큰 입력창이 열립니다.</div>
 
     <div class="stage-wrap" id="stageWrap">
         <div id="captureArea" class="stage">
@@ -1340,8 +1308,6 @@ const img = document.getElementById("formImage");
 const overlay = document.getElementById("overlay");
 const captureArea = document.getElementById("captureArea");
 const stageWrap = document.getElementById("stageWrap");
-const zoomRange = document.getElementById("zoomRange");
-const zoomLabel = document.getElementById("zoomLabel");
 const statusText = document.getElementById("statusText");
 
 const textModal = document.getElementById("textModal");
@@ -1761,28 +1727,12 @@ async function downloadImage() {
     }
 }
 
-function setZoom(v) {
-    if (!img.naturalWidth) return;
-    zoomRange.value = String(v);
-    zoomLabel.textContent = v + "%";
-    captureArea.style.width = Math.max(100, Math.round(img.naturalWidth * (v / 100))) + "px";
-
+function fitStageToViewport() {
+    captureArea.style.width = "100%";
     requestAnimationFrame(() => {
         setStageSize();
         renderFields();
     });
-}
-
-function applyInitialMobileZoom() {
-    const wrapWidth = stageWrap.clientWidth - 24;
-    if (!img.naturalWidth || wrapWidth <= 0) {
-        setZoom(IS_MOBILE ? 130 : 100);
-        return;
-    }
-
-    const fitPercent = Math.floor((wrapWidth / img.naturalWidth) * 100);
-    const initial = IS_MOBILE ? Math.max(85, Math.min(140, fitPercent + 18)) : Math.max(60, Math.min(100, fitPercent));
-    setZoom(initial);
 }
 
 function openTextModal(field, key, value) {
@@ -1928,11 +1878,6 @@ if (!ADMIN_VIEW) {
     if (saveBtn) saveBtn.addEventListener("click", saveForm);
     if (downloadBtn) downloadBtn.addEventListener("click", downloadImage);
 }
-
-zoomRange.addEventListener("input", () => {
-    setZoom(Number(zoomRange.value));
-});
-
 document.getElementById("textModalCancel").addEventListener("click", closeTextModal);
 document.getElementById("textModalConfirm").addEventListener("click", () => {
     if (!ACTIVE_TEXT_KEY) return;
@@ -1962,13 +1907,12 @@ signatureModal.addEventListener("click", (e) => {
 
 window.addEventListener("resize", () => {
     if (!img.naturalWidth) return;
-    const currentZoom = Number(zoomRange.value || "100");
-    setZoom(currentZoom);
+    fitStageToViewport();
 });
 
 function initAfterImageLoad() {
     initializeState();
-    applyInitialMobileZoom();
+    fitStageToViewport();
     refreshStatus();
 }
 
