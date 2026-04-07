@@ -2858,11 +2858,10 @@ def init_db_route():
     except Exception as e:
         return f"DB 초기화 실패: {e}", 500
 
-@app.route("/", methods=["GET", "POST"])
+
 
 @app.before_request
 def app_bootstrap_check():
-    # 정적/헬스체크는 통과
     allowed_paths = {"/healthz", "/readyz", "/init-db"}
     if request.path in allowed_paths or request.path.startswith("/static/"):
         return None
@@ -2871,7 +2870,9 @@ def app_bootstrap_check():
         ensure_db_ready()
 
     return None
-    
+
+
+@app.route("/", methods=["GET", "POST"])
 def home():
     if session.get("user"):
         return redirect(url_for("dashboard"))
@@ -2886,13 +2887,15 @@ def home():
             return render_template_string(LOGIN_HTML, error=f"로그인 처리 중 오류: {e}")
 
         if not user:
-            return render_template_string(LOGIN_HTML, error="아이디 또는 비밀번호가 올바르지 않거나 사용 중지된 계정입니다.")
+            return render_template_string(
+                LOGIN_HTML,
+                error="아이디 또는 비밀번호가 올바르지 않거나 사용 중지된 계정입니다."
+            )
 
         session["user"] = user
         return redirect(url_for("dashboard"))
 
     return render_template_string(LOGIN_HTML, error=None)
-
 @app.route("/dashboard")
 def dashboard():
     user = session.get("user")
