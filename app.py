@@ -18,6 +18,12 @@ from flask import (
 
 load_dotenv()
 
+AUTO_INIT_DB = os.getenv("AUTO_INIT_DB", "1").strip() == "1"
+APP_ENV = os.getenv("APP_ENV", "production").strip().lower()
+PORT = int(os.getenv("PORT", "8000"))
+DB_READY = False
+DB_READY_ERROR = ""
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "default-secret")
 
@@ -28,6 +34,7 @@ FORM_CONFIG_PATH = "form_config.json"
 FORMS_FOLDER = "forms"
 
 os.makedirs(FORMS_FOLDER, exist_ok=True)
+
 
 LOGIN_HTML = """
 <!doctype html>
@@ -558,12 +565,16 @@ ADMIN_HTML = """
         const zones = document.querySelectorAll(".dropzone");
 
         zones.forEach((zone) => {
-            new Sortable(zone, {
-                group: "groups",
-                animation: 180,
-                ghostClass: "drag-ghost",
-            });
-        });
+        new Sortable(zone, {
+        group: "groups",
+        animation: 180,
+        ghostClass: "drag-ghost",
+        delay: 120,
+        delayOnTouchOnly: true,
+        fallbackOnBody: true,
+        swapThreshold: 0.65,
+    });
+});
 
         document.getElementById("saveGroupBtn").addEventListener("click", async () => {
             const assignments = [];
@@ -2005,6 +2016,25 @@ def init_db():
                 cur.execute(sql)
         conn.commit()
 
+
+
+
+def ensure_db_ready():
+    global DB_READY, DB_READY_ERROR
+    try:
+        init_db()
+        DB_READY = True
+        DB_READY_ERROR = ""
+        return True
+    except Exception as e:
+        DB_READY = False
+        DB_READY_ERROR = str(e)
+        return False
+
+
+if AUTO_INIT_DB:
+    ensure_db_ready()
+
 def load_users():
     if not os.path.exists(USERS_XLSX_PATH):
         raise FileNotFoundError(f"{USERS_XLSX_PATH} 파일을 찾을 수 없습니다.")
@@ -2829,6 +2859,19 @@ def init_db_route():
         return f"DB 초기화 실패: {e}", 500
 
 @app.route("/", methods=["GET", "POST"])
+
+@app.before_request
+def app_bootstrap_check():
+    # 정적/헬스체크는 통과
+    allowed_paths = {"/healthz", "/readyz", "/init-db"}
+    if request.path in allowed_paths or request.path.startswith("/static/"):
+        return None
+
+    if AUTO_INIT_DB and not DB_READY:
+        ensure_db_ready()
+
+    return None
+    
 def home():
     if session.get("user"):
         return redirect(url_for("dashboard"))
@@ -3158,5 +3201,31 @@ def api_form_status(form_id):
         missing_common=status["missing_common"],
     )
 
+@app.route("/healthz")
+def healthz():
+    return make_json_response(
+        True,
+        status="healthy",
+        app_env=APP_ENV,
+    ), 200
+
+
+@app.route("/readyz")
+def readyz():
+    ok = ensure_db_ready()
+    if not ok:
+        return make_json_response(
+            False,
+            status="not_ready",
+            database=False,
+            error=DB_READY_ERROR,
+        ), 503
+
+    return make_json_response(
+        True,
+        status="ready",
+        database=True,
+    ), 200
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=(APP_ENV == "development"))
