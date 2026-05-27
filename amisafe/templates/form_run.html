@@ -1,0 +1,1629 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1, user-scalable=yes">
+    <title>{{ form.form_name }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 16px auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 14px;
+            background: #1f6feb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            min-height: 42px;
+        }
+
+        .btn.gray { background: #6b7280; }
+        .btn.green { background: #188038; }
+        .btn.red { background: #d93025; }
+
+        .info-box {
+            padding: 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f8fafc;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        #statusText { font-weight: bold; }
+        .small {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .stage-wrap {
+            overflow: auto;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+            padding: 12px;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+
+        .stage {
+            position: relative;
+            display: block;
+            width: 100%;
+            line-height: 0;
+        }
+
+        .stage img {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+        }
+
+        .field-item {
+            position: absolute;
+        }
+
+        .field-item.readonly {
+            pointer-events: none;
+        }
+
+        .field-label {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.2;
+            background: transparent;
+        }
+
+        .readonly-box {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            background: rgba(255,255,255,0.55);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-align: center;
+            word-break: break-word;
+            line-height: 1.2;
+            padding: 2px 4px;
+            color: #111827;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+        }
+
+        .tap-box {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            background: rgba(255,255,255,0.72);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            padding: 3px 6px;
+            line-height: 1.2;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #111827;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(2px);
+        }
+
+        .tap-box.required-empty {
+            border-color: #d93025;
+            background: rgba(255, 244, 244, 0.95);
+        }
+
+        .tap-box .placeholder {
+            color: #999;
+        }
+
+        .checkbox-box {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #94a3b8;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            padding: 0;
+            position: relative;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+            transition: all 0.16s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .checkbox-box::after {
+            content: "";
+            width: 34%;
+            height: 58%;
+            border-right: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            transform: rotate(45deg) scale(0.7);
+            margin-top: -6%;
+            transition: all 0.14s ease;
+        }
+
+        .checkbox-box.checked {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            border-color: #1d4ed8;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28);
+        }
+
+        .checkbox-box.checked::after {
+            border-right-color: #ffffff;
+            border-bottom-color: #ffffff;
+            transform: rotate(45deg) scale(1);
+        }
+
+        .checkbox-box.required-empty {
+            border-color: #ef4444;
+            background: linear-gradient(180deg, #fff5f5 0%, #ffe8e8 100%);
+        }
+
+        .choice-group {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: visible;
+        }
+
+        .choice-option {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #1f6feb;
+            background: rgba(255,255,255,0.92);
+            border-radius: 999px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .choice-option.selected::after {
+            content: "●";
+        }
+
+        .choice-option.readonly-choice {
+            background: rgba(255,255,255,0.6);
+            border: 1px dashed #999;
+        }
+
+        .signature-preview {
+            width: 100%;
+            height: 100%;
+            border: 1px dashed rgba(15, 23, 42, 0.18);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(2px);
+        }
+
+        .signature-preview.required-empty {
+            border-color: #ef4444;
+            background: rgba(255, 244, 244, 0.9);
+        }
+
+        .signature-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            object-fit: contain;
+        }
+
+        .signature-preview .signature-placeholder {
+            color: #666;
+            text-align: center;
+            padding: 4px;
+            line-height: 1.2;
+        }
+
+
+        .capture-mode .tap-box,
+        .capture-mode .readonly-box,
+        .capture-mode .signature-preview,
+        .capture-mode .choice-group-wrap,
+        .capture-mode .checkbox-box {
+            background: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+
+        .capture-mode .tap-box .placeholder,
+        .capture-mode .signature-placeholder {
+            display: none !important;
+        }
+
+        .capture-mode .readonly-box img,
+        .capture-mode .signature-preview img {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .capture-mode .checkbox-box {
+            border: none !important;
+        }
+
+        .capture-mode .checkbox-box::after {
+            border-right-color: #111827 !important;
+            border-bottom-color: #111827 !important;
+        }
+
+        @media (max-width: 768px) {
+            .topbar {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: rgba(255,255,255,0.94);
+                backdrop-filter: blur(10px);
+                padding-bottom: 10px;
+                margin-bottom: 10px;
+            }
+
+            .tools {
+                position: sticky;
+                top: 72px;
+                z-index: 99;
+                background: rgba(255,255,255,0.94);
+                backdrop-filter: blur(10px);
+                padding: 10px 0;
+            }
+
+            .tap-box,
+            .readonly-box,
+            .signature-preview {
+                min-height: 28px;
+                border-radius: 12px;
+            }
+
+            .readonly-box {
+                font-weight: 700;
+            }
+
+            .checkbox-box {
+                border-width: 2.5px;
+                border-radius: 10px;
+                box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+            }
+
+            .checkbox-box::after {
+                border-right-width: 3.5px;
+                border-bottom-width: 3.5px;
+            }
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(96vw, 900px);
+            max-height: 92vh;
+            overflow: auto;
+            background: white;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            min-height: 180px;
+            resize: vertical;
+            border: 1px solid #cfd8e3;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        .signature-modal-box {
+            width: 100%;
+            height: min(58vh, 420px);
+            border: 1px solid #d0d7de;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            touch-action: none;
+        }
+
+        #signatureModalCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+            background: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .wrap {
+                margin: 8px;
+                padding: 10px;
+                border-radius: 10px;
+            }
+
+            .topbar {
+                align-items: stretch;
+            }
+
+            .topbar > div:last-child {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 9px 12px;
+                font-size: 14px;
+            }
+
+            .info-box {
+                font-size: 14px;
+            }
+
+            .small {
+                font-size: 12px;
+            }
+
+            .tools {
+                align-items: flex-start;
+            }
+
+            .tools input[type="range"] {
+                width: 180px;
+            }
+        }
+    
+
+        .app-shell {
+            position: relative;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 30px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #1d4ed8;
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid #c7d2fe;
+        }
+
+        .status-pill.saving {
+            background: #fff7ed;
+            color: #c2410c;
+            border-color: #fdba74;
+        }
+
+        .status-pill.done {
+            background: #ecfdf3;
+            color: #15803d;
+            border-color: #86efac;
+        }
+
+        .topbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn[disabled] {
+            opacity: 0.65;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .btn.primary-strong {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+        }
+
+        .btn.success-strong {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            box-shadow: 0 10px 22px rgba(22, 163, 74, 0.20);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .info-chip {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 10px 12px;
+            line-height: 1.45;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        .stage-frame {
+            border: 1px solid #dbe5ef;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+        }
+
+        .field-item.editable-active {
+            z-index: 3;
+        }
+
+        .tap-box,
+        .signature-preview,
+        .checkbox-box,
+        .choice-option {
+            transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+        }
+
+        .tap-box:hover,
+        .signature-preview:hover,
+        .checkbox-box:hover,
+        .choice-option:hover {
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+        }
+
+        .tap-box:active,
+        .signature-preview:active,
+        .checkbox-box:active,
+        .choice-option:active {
+            transform: scale(0.98);
+        }
+
+        .autosave-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .bottom-action-bar {
+            display: none;
+        }
+
+        .toast-wrap {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            min-width: 240px;
+            max-width: min(88vw, 420px);
+            background: rgba(15, 23, 42, 0.94);
+            color: white;
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+            line-height: 1.45;
+            font-size: 14px;
+            transform: translateY(8px);
+            opacity: 0;
+            transition: all 0.18s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { background: rgba(21, 128, 61, 0.96); }
+        .toast.error { background: rgba(185, 28, 28, 0.96); }
+        .toast.warn { background: rgba(194, 65, 12, 0.96); }
+
+        .compact-control .checkbox-box,
+        .compact-control .choice-option {
+            border-width: 1.2px;
+            box-shadow: none;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .compact-control .checkbox-box {
+            border-radius: 4px;
+        }
+
+        .compact-control .choice-option {
+            border-radius: 999px;
+        }
+
+        .compact-text .tap-box,
+        .compact-text .readonly-box {
+            border-radius: 4px;
+            box-shadow: none;
+            padding: 0 3px;
+            background: rgba(255,255,255,0.5);
+            border: 1px solid rgba(15, 23, 42, 0.10);
+        }
+
+        .compact-text .tap-box .placeholder {
+            font-size: 10px;
+            line-height: 1.05;
+        }
+
+        @media (max-width: 768px) {
+            .wrap {
+                padding-bottom: 92px;
+            }
+
+            .topbar {
+                gap: 10px;
+            }
+
+            .topbar-actions {
+                width: 100%;
+            }
+
+            .topbar-actions .btn,
+            .topbar-actions .status-pill {
+                flex: 1 1 auto;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bottom-action-bar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+                display: flex;
+                gap: 10px;
+                padding: 12px;
+                background: rgba(255,255,255,0.96);
+                backdrop-filter: blur(12px);
+                border-top: 1px solid #e5e7eb;
+                box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+            }
+
+            .bottom-action-bar .btn {
+                flex: 1 1 0;
+                min-height: 48px;
+                font-size: 15px;
+                font-weight: 800;
+            }
+
+            .toast-wrap {
+                left: 12px;
+                right: 12px;
+                bottom: 84px;
+            }
+
+            .toast {
+                max-width: none;
+                min-width: 0;
+            }
+        }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="topbar">
+        <div>
+            <h2 style="margin:0;">{{ form.form_name }}</h2>
+            <div class="small">양식유형: {{ form.form_type }} / 문서상태: {{ doc_status }}</div>
+        </div>
+        <div class="topbar-actions">
+            <span class="status-pill" id="statusPill">상태: <span id="statusText">{{ doc_status }}</span></span>
+            {% if doc_json and '"admin_view": true' in doc_json %}
+                <a class="btn gray" href="/admin?work_date={{ work_date }}">관리자 목록</a>
+            {% else %}
+                <button class="btn primary-strong" id="saveBtn" type="button">저장</button>
+                <button class="btn success-strong" id="downloadBtn" type="button">다운로드</button>
+                <a class="btn gray" href="/forms">목록</a>
+            {% endif %}
+            <a class="btn gray" href="/logout">로그아웃</a>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <div class="info-grid">
+            <div class="info-chip"><strong>사용자</strong><br>{{ user.name }} ({{ user.id }})</div>
+            <div class="info-chip"><strong>조 / 구분 / 슬롯</strong><br>{{ user.group }}조 / {{ user.role }} / {{ user.slot_index }}</div>
+            <div class="info-chip"><strong>작업일자</strong><br>{{ work_date }}</div>
+            <div class="info-chip"><strong>문서 ID</strong><br>{{ document_id }}</div>
+        </div>
+        <div class="autosave-text" id="autosaveText">자동 저장 대기 중</div>
+        <div class="small" style="margin-top:8px;">공동양식은 같은 조가 한 장을 공유합니다. 개인양식은 본인 것만 저장합니다.</div>
+    </div>
+    <div class="small" style="margin: 10px 0 14px 0;">모바일에서는 손가락 두 개로 확대/축소하고, 칸을 누르면 큰 입력창이 열립니다.</div>
+
+    <div class="stage-frame">
+        <div class="stage-wrap" id="stageWrap">
+            <div id="captureArea" class="stage">
+                <img id="formImage" src="{{ image_url }}" alt="{{ form.form_name }}">
+                <div id="overlay" class="overlay"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="textModal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-title" id="textModalTitle">텍스트 입력</div>
+        <textarea id="textModalInput" class="modal-textarea" placeholder="내용을 입력하세요"></textarea>
+        <div class="modal-actions">
+            <button type="button" class="btn gray" id="textModalCancel">취소</button>
+            <button type="button" class="btn" id="textModalConfirm">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="signatureModal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-title" id="signatureModalTitle">서명 입력</div>
+        <div class="signature-modal-box">
+            <canvas id="signatureModalCanvas"></canvas>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn red" id="signatureModalClear">지우기</button>
+            <button type="button" class="btn gray" id="signatureModalCancel">취소</button>
+            <button type="button" class="btn" id="signatureModalConfirm">확인</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+{% if not (doc_json and '"admin_view": true' in doc_json) %}
+<div class="bottom-action-bar">
+    <button class="btn primary-strong" type="button" id="mobileSaveBtn">저장</button>
+    <button class="btn success-strong" type="button" id="mobileDownloadBtn">다운로드</button>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+const FORM_DEF = {{ form_json|safe }};
+const USER = {{ user_json|safe }};
+const DOC_META = {{ doc_json|safe }};
+const ADMIN_VIEW = !!(DOC_META && DOC_META.admin_view);
+const IS_MOBILE = window.innerWidth <= 768;
+const RESOLVED_VALUES = {{ resolved_values_json|safe }};
+const LABEL_VALUES = {{ label_values_json|safe }};
+let CURRENT_STATUS = {{ status_json|safe }};
+
+const img = document.getElementById("formImage");
+const overlay = document.getElementById("overlay");
+const captureArea = document.getElementById("captureArea");
+const stageWrap = document.getElementById("stageWrap");
+const statusText = document.getElementById("statusText");
+const statusPill = document.getElementById("statusPill");
+const autosaveText = document.getElementById("autosaveText");
+const toastWrap = document.getElementById("toastWrap");
+const mobileSaveBtn = document.getElementById("mobileSaveBtn");
+const mobileDownloadBtn = document.getElementById("mobileDownloadBtn");
+
+const textModal = document.getElementById("textModal");
+const textModalTitle = document.getElementById("textModalTitle");
+const textModalInput = document.getElementById("textModalInput");
+const signatureModal = document.getElementById("signatureModal");
+const signatureModalTitle = document.getElementById("signatureModalTitle");
+const signatureModalCanvas = document.getElementById("signatureModalCanvas");
+
+let ACTIVE_TEXT_KEY = null;
+let ACTIVE_SIGNATURE_KEY = null;
+let SIGNATURE_DRAW_BOUND = false;
+
+const EDIT_STATE = {};
+let AUTO_SAVE_TIMER = null;
+let LAST_SAVED_SNAPSHOT = "";
+let IS_SAVING = false;
+
+function setStatusPill(mode, text) {
+    if (!statusPill) return;
+    statusPill.classList.remove("saving", "done");
+    if (mode) statusPill.classList.add(mode);
+    if (statusText && text) statusText.textContent = text;
+}
+
+function setSavingUi(isSaving, labelText) {
+    IS_SAVING = isSaving;
+    const text = labelText || (isSaving ? "저장 중..." : (CURRENT_STATUS?.document_status_text || "in_progress"));
+    setStatusPill(isSaving ? "saving" : (text === "completed" ? "done" : ""), text);
+
+    [saveBtn, downloadBtn, mobileSaveBtn, mobileDownloadBtn].forEach((el) => {
+        if (!el) return;
+        el.disabled = isSaving;
+    });
+
+    if (saveBtn) saveBtn.textContent = isSaving ? "저장 중..." : "저장";
+    if (mobileSaveBtn) mobileSaveBtn.textContent = isSaving ? "저장 중..." : "저장";
+}
+
+function showToast(message, kind = "success", timeout = 2200) {
+    if (!toastWrap) return;
+    const toast = document.createElement("div");
+    toast.className = `toast ${kind}`;
+    toast.textContent = message;
+    toastWrap.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add("show"));
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 180);
+    }, timeout);
+}
+
+function updateAutosaveText(text) {
+    if (!autosaveText) return;
+    autosaveText.textContent = text;
+}
+
+function snapshotState() {
+    return JSON.stringify(getCurrentFieldValues());
+}
+
+function scheduleAutoSave() {
+    if (ADMIN_VIEW) return;
+    if (AUTO_SAVE_TIMER) clearTimeout(AUTO_SAVE_TIMER);
+
+    updateAutosaveText("자동 저장 예정...");
+    AUTO_SAVE_TIMER = setTimeout(async () => {
+        const current = snapshotState();
+        if (current === LAST_SAVED_SNAPSHOT || IS_SAVING) {
+            updateAutosaveText("자동 저장 대기 중");
+            return;
+        }
+        const result = await saveForm({ silent: true, autosave: true });
+        if (result?.ok) {
+            LAST_SAVED_SNAPSHOT = snapshotState();
+            updateAutosaveText("자동 저장 완료");
+        } else {
+            updateAutosaveText("자동 저장 실패");
+        }
+    }, 1200);
+}
+
+function fieldKey(field) {
+    if (field.slot_index !== null && field.slot_index !== undefined && field.slot_index !== "") {
+        return `${field.field_id}__slot_${field.slot_index}`;
+    }
+    return field.field_id;
+}
+
+function isEditable(field) {
+    if (ADMIN_VIEW) return false;
+    if (!field.visible) return false;
+    const targetRole = field.target_role || "공통";
+
+    if (FORM_DEF.form_type === "individual") {
+        return targetRole === "공통" || targetRole === USER.role;
+    }
+
+    if (field.slot_index !== null && field.slot_index !== undefined && field.slot_index !== "") {
+        return String(field.slot_index) === String(USER.slot_index)
+            && (targetRole === "공통" || targetRole === USER.role);
+    }
+
+    return targetRole === "공통" || targetRole === USER.role;
+}
+
+function px(v) {
+    return `${v}px`;
+}
+
+function initializeState() {
+    (FORM_DEF.fields || []).forEach((field) => {
+        if (!field.visible || field.type === "label") return;
+        const key = fieldKey(field);
+        const initVal = RESOLVED_VALUES[key];
+        if (field.type === "checkbox") {
+            EDIT_STATE[key] = !!initVal;
+        } else {
+            EDIT_STATE[key] = initVal || "";
+        }
+    });
+}
+
+function setStageSize() {
+    overlay.style.width = img.clientWidth + "px";
+    overlay.style.height = img.clientHeight + "px";
+    captureArea.style.height = img.clientHeight + "px";
+}
+
+function getCurrentScaleRatios() {
+    const naturalW = img.naturalWidth || img.clientWidth || 1;
+    const naturalH = img.naturalHeight || img.clientHeight || 1;
+    const imgW = img.clientWidth || 1;
+    const imgH = img.clientHeight || 1;
+    const ratioX = imgW / naturalW;
+    const ratioY = imgH / naturalH;
+    const uniformScale = Math.min(ratioX, ratioY);
+
+    return {
+        naturalW,
+        naturalH,
+        imgW,
+        imgH,
+        ratioX,
+        ratioY,
+        uniformScale,
+        uiScale: uniformScale,
+    };
+}
+
+function getFieldRect(field, scales) {
+    const { imgW, imgH, ratioX, ratioY, uniformScale } = scales;
+
+    const hasPct =
+        field.x_pct !== undefined || field.y_pct !== undefined ||
+        field.w_pct !== undefined || field.h_pct !== undefined;
+
+    let left = hasPct ? (Number(field.x_pct || 0) * imgW) : ((field.x || 0) * ratioX);
+    let top = hasPct ? (Number(field.y_pct || 0) * imgH) : ((field.y || 0) * ratioY);
+    let width = hasPct ? (Number(field.w_pct || 0) * imgW) : ((field.width || 24) * ratioX);
+    let height = hasPct ? (Number(field.h_pct || 0) * imgH) : ((field.height || 24) * ratioY);
+
+    if (field.type === "checkbox") {
+        const baseSize = hasPct
+            ? Math.min(Number(field.w_pct || 0) * imgW, Number(field.h_pct || 0) * imgH)
+            : Math.min((field.width || 24) * ratioX, (field.height || 24) * ratioY);
+
+        const size = Math.max(8, Math.min(16, baseSize || ((field.width || field.height || 24) * uniformScale)));
+        width = size;
+        height = size;
+    }
+
+    return { left, top, width, height };
+}
+
+function getChoiceOptionRect(opt, fieldRect, scales) {
+    const { imgW, imgH, ratioX, ratioY, uniformScale } = scales;
+
+    const hasPct =
+        opt.dx_pct !== undefined || opt.dy_pct !== undefined ||
+        opt.w_pct !== undefined || opt.h_pct !== undefined;
+
+    let left = hasPct ? (Number(opt.dx_pct || 0) * imgW)
+        : ((opt.dx || 0) * ratioX);
+    let top = hasPct ? (Number(opt.dy_pct || 0) * imgH)
+        : ((opt.dy || 0) * ratioY);
+    let width = hasPct ? (Number(opt.w_pct || 0) * imgW)
+        : ((opt.width || 20) * ratioX);
+    let height = hasPct ? (Number(opt.h_pct || 0) * imgH)
+        : ((opt.height || 20) * ratioY);
+
+    const size = Math.max(8, Math.min(16, Math.min(width, height) || ((opt.width || opt.height || 20) * uniformScale)));
+    width = size;
+    height = size;
+
+    return { left, top, width, height };
+}
+
+function isEmptyValue(field, value) {
+    if (field.type === "checkbox") return !value;
+    return value === null || value === undefined || String(value).trim() === "";
+}
+
+function createReadonlyText(value, uiScale) {
+    const wrap = document.createElement("div");
+    wrap.className = "readonly-box";
+    wrap.textContent = value || "";
+    wrap.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    return wrap;
+}
+
+function createEditableText(field, key, value, uiScale) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tap-box";
+    if (field.required && isEmptyValue(field, value)) {
+        btn.classList.add("required-empty");
+    }
+    btn.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    btn.style.padding = `${Math.max(1, 3 * uiScale)}px ${Math.max(2, 6 * uiScale)}px`;
+    btn.dataset.fieldKey = key;
+
+    if (value && String(value).trim() !== "") {
+        btn.textContent = value;
+    } else {
+        const span = document.createElement("span");
+        span.className = "placeholder";
+        span.textContent = field.placeholder || "눌러서 입력";
+        btn.appendChild(span);
+    }
+
+    btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openTextModal(field, key, value || "");
+    });
+
+    return btn;
+}
+
+function createEditableCheckbox(field, key, value, uiScale) {
+    const box = document.createElement("button");
+    box.type = "button";
+    box.className = "checkbox-box";
+    if (value) box.classList.add("checked");
+    if (field.required && !value) box.classList.add("required-empty");
+    box.dataset.fieldKey = key;
+
+    const minSize = window.innerWidth <= 768 ? 8 : 8;
+    box.style.minWidth = `${minSize}px`;
+    box.style.minHeight = `${minSize}px`;
+
+    box.addEventListener("click", (e) => {
+        e.preventDefault();
+        EDIT_STATE[key] = !EDIT_STATE[key];
+        renderFields();
+        scheduleAutoSave();
+    });
+
+    return box;
+}
+
+function createReadonlyCheckbox(value, uiScale) {
+    const wrap = document.createElement("div");
+    wrap.className = "checkbox-box" + (value ? " checked" : "");
+    wrap.style.cursor = "default";
+    wrap.style.minWidth = `${Math.max(8, 16 * uiScale)}px`;
+    wrap.style.minHeight = `${Math.max(8, 16 * uiScale)}px`;
+    return wrap;
+}
+
+function createEditableChoiceGroup(field, key, value, fieldRect, scales) {
+    const wrap = document.createElement("div");
+    wrap.className = "choice-group";
+    const options = field.options || [];
+    const uiScale = scales.uiScale;
+
+    options.forEach((opt) => {
+        const rect = getChoiceOptionRect(opt, fieldRect, scales);
+        const div = document.createElement("button");
+        div.type = "button";
+        div.className = "choice-option";
+        if (String(value || "") === String(opt.option_value)) {
+            div.classList.add("selected");
+        }
+
+        div.style.left = px(rect.left);
+        div.style.top = px(rect.top);
+        div.style.width = px(rect.width);
+        div.style.height = px(rect.height);
+        div.style.fontSize = `${Math.max(8, 12 * uiScale)}px`;
+
+        div.addEventListener("click", (e) => {
+            e.preventDefault();
+            EDIT_STATE[key] = opt.option_value;
+            renderFields();
+            scheduleAutoSave();
+        });
+
+        wrap.appendChild(div);
+    });
+
+    return wrap;
+}
+
+function createReadonlyChoiceGroup(field, value, fieldRect, scales) {
+    const wrap = document.createElement("div");
+    wrap.className = "choice-group";
+    const options = field.options || [];
+    const uiScale = scales.uiScale;
+
+    options.forEach((opt) => {
+        const rect = getChoiceOptionRect(opt, fieldRect, scales);
+
+        const div = document.createElement("div");
+        div.className = "choice-option readonly-choice";
+        div.style.left = px(rect.left);
+        div.style.top = px(rect.top);
+        div.style.width = px(rect.width);
+        div.style.height = px(rect.height);
+        div.style.fontSize = `${Math.max(8, 12 * uiScale)}px`;
+        div.textContent = String(value || "") === String(opt.option_value) ? "●" : "";
+        wrap.appendChild(div);
+    });
+
+    return wrap;
+}
+
+function createEditableSignature(field, key, value, uiScale) {
+    const box = document.createElement("button");
+    box.type = "button";
+    box.className = "signature-preview";
+    if (field.required && isEmptyValue(field, value)) {
+        box.classList.add("required-empty");
+    }
+    box.dataset.fieldKey = key;
+
+    if (value) {
+        const signImg = document.createElement("img");
+        signImg.src = value;
+        box.appendChild(signImg);
+    } else {
+        const place = document.createElement("div");
+        place.className = "signature-placeholder";
+        place.style.fontSize = `${Math.max(8, 12 * uiScale)}px`;
+        place.textContent = "눌러서 서명";
+        box.appendChild(place);
+    }
+
+    box.addEventListener("click", (e) => {
+        e.preventDefault();
+        openSignatureModal(field, key, value || "");
+    });
+
+    return box;
+}
+
+function createReadonlySignature(value) {
+    const wrap = document.createElement("div");
+    wrap.className = "readonly-box";
+    if (value) {
+        const image = document.createElement("img");
+        image.src = value;
+        image.style.maxWidth = "100%";
+        image.style.maxHeight = "100%";
+        image.style.objectFit = "contain";
+        wrap.appendChild(image);
+    }
+    return wrap;
+}
+
+function createLabel(value, uiScale) {
+    const div = document.createElement("div");
+    div.className = "field-label";
+    div.textContent = value || "";
+    div.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    return div;
+}
+
+function renderFields() {
+    setStageSize();
+    overlay.innerHTML = "";
+
+    const scales = getCurrentScaleRatios();
+    const { uiScale } = scales;
+
+    (FORM_DEF.fields || []).forEach((field) => {
+        if (!field.visible) return;
+
+        const key = fieldKey(field);
+        const editable = isEditable(field);
+        const value = EDIT_STATE[key];
+        const labelValue = LABEL_VALUES[key];
+        const rect = getFieldRect(field, scales);
+
+        const item = document.createElement("div");
+        item.className = "field-item" + (editable ? "" : " readonly");
+        item.style.left = px(rect.left);
+        item.style.top = px(rect.top);
+        item.style.width = px(rect.width);
+        item.style.height = px(rect.height);
+
+        if (rect.width <= 18 || rect.height <= 18) {
+            item.classList.add("compact-control");
+        }
+        if (field.type === "text" && rect.height <= 26) {
+            item.classList.add("compact-text");
+        }
+
+        let node = null;
+
+        if (field.type === "label") {
+            node = createLabel(labelValue, uiScale);
+        } else if (field.type === "text") {
+            node = editable ? createEditableText(field, key, value, uiScale) : createReadonlyText(value, uiScale);
+        } else if (field.type === "checkbox") {
+            node = editable ? createEditableCheckbox(field, key, value, uiScale) : createReadonlyCheckbox(value, uiScale);
+        } else if (field.type === "choice_group") {
+            node = editable
+                ? createEditableChoiceGroup(field, key, value, rect, scales)
+                : createReadonlyChoiceGroup(field, value, rect, scales);
+        } else if (field.type === "signature") {
+            node = editable ? createEditableSignature(field, key, value, uiScale) : createReadonlySignature(value);
+        } else {
+            node = createReadonlyText(value, uiScale);
+        }
+
+        item.appendChild(node);
+        overlay.appendChild(item);
+    });
+}
+
+function getCurrentFieldValues() {
+    return JSON.parse(JSON.stringify(EDIT_STATE));
+}
+
+function validateClientSide() {
+    const missing = [];
+
+    (FORM_DEF.fields || []).forEach((field) => {
+        if (!field.visible || !field.required) return;
+        if (!isEditable(field)) return;
+        if (field.type === "label") return;
+
+        const key = fieldKey(field);
+        const value = EDIT_STATE[key];
+
+        if (field.type === "text" && (!value || String(value).trim() === "")) {
+            missing.push(field.label || field.field_id);
+        }
+        if (field.type === "checkbox" && !value) {
+            missing.push(field.label || field.field_id);
+        }
+        if (field.type === "choice_group" && (!value || String(value).trim() === "")) {
+            missing.push(field.label || field.field_id);
+        }
+        if (field.type === "signature" && (!value || String(value).trim() === "")) {
+            missing.push(field.label || field.field_id);
+        }
+    });
+
+    return missing;
+}
+
+async function saveForm(options = {}) {
+    const { silent = false, autosave = false } = options;
+
+    const missing = validateClientSide();
+    if (missing.length > 0) {
+        if (!silent) {
+            alert("필수 입력이 누락되었습니다.\\n- " + missing.join("\\n- "));
+        }
+        showToast("필수 입력이 누락되었습니다.", "warn");
+        return { ok: false };
+    }
+
+    const values = getCurrentFieldValues();
+    setSavingUi(true, autosave ? "자동 저장 중..." : "저장 중...");
+    updateAutosaveText(autosave ? "자동 저장 중..." : "저장 처리 중...");
+
+    try {
+        const resp = await fetch(`/api/form/${FORM_DEF.form_id}/save`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ values })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || !data.ok) {
+            if (!silent) {
+                alert(data.message || "저장에 실패했습니다.");
+            }
+            showToast(data.message || "저장에 실패했습니다.", "error", 2600);
+            setSavingUi(false, CURRENT_STATUS?.document_status_text || "in_progress");
+            updateAutosaveText("저장 실패");
+            return data;
+        }
+
+        CURRENT_STATUS = data;
+        LAST_SAVED_SNAPSHOT = snapshotState();
+        setSavingUi(false, data.document_status_text);
+        updateAutosaveText(autosave ? "자동 저장 완료" : "방금 저장됨");
+
+        let message = data.message || "저장되었습니다.";
+
+        if (data.document_completed) {
+            try {
+                const imageDataUrl = await captureCurrentImageDataUrl();
+                const uploadData = await uploadCompletedImageToServer(imageDataUrl);
+                if (uploadData.saved_relative_path) {
+                    message += `\\n서버 저장: ${uploadData.saved_relative_path}`;
+                } else {
+                    message += "\\n서버 DATA 폴더에도 저장되었습니다.";
+                }
+            } catch (e) {
+                message += `\\n서버 자동 저장 실패: ${e.message || e}`;
+            }
+        }
+
+        if (!silent) {
+            alert(message);
+        }
+        showToast(autosave ? "자동 저장되었습니다." : "저장되었습니다.", "success");
+
+        return data;
+    } catch (e) {
+        setSavingUi(false, CURRENT_STATUS?.document_status_text || "in_progress");
+        updateAutosaveText("저장 실패");
+        if (!silent) {
+            alert("저장 중 오류가 발생했습니다.");
+        }
+        showToast("저장 중 오류가 발생했습니다.", "error", 2600);
+        return { ok: false, message: String(e) };
+    }
+}
+
+async function refreshStatus() {
+    const resp = await fetch(`/api/form/${FORM_DEF.form_id}/status`);
+    const data = await resp.json();
+    if (resp.ok && data.ok) {
+        CURRENT_STATUS = data;
+        setStatusPill(
+            data.document_status_text === "completed" ? "done" : "",
+            data.document_status_text
+        );
+    }
+    return data;
+}
+
+function sanitizeFilePart(s) {
+    return String(s || "").replace(/[\\\\/:*?"<>|\\s]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+}
+
+function getDownloadBaseFilename() {
+    const formName = sanitizeFilePart(FORM_DEF.form_name);
+    const ymd = String(DOC_META.work_date).replace(/-/g, "");
+
+    if (FORM_DEF.form_type === "group") {
+        return `${sanitizeFilePart(USER.group)}_${ymd}_${formName}`;
+    }
+    return `${sanitizeFilePart(USER.id)}_${ymd}_${formName}`;
+}
+
+function getNextDownloadFilename() {
+    const base = getDownloadBaseFilename();
+    const key = "download_counter::" + base;
+    const count = Number(localStorage.getItem(key) || "0");
+    const filename = count === 0 ? `${base}.png` : `${base}_${count}.png`;
+    localStorage.setItem(key, String(count + 1));
+    return filename;
+}
+
+async function captureCurrentImageDataUrl() {
+    document.body.classList.add("capture-mode");
+    try {
+        const canvas = await html2canvas(document.getElementById("captureArea"), {
+            useCORS: true,
+            backgroundColor: null,
+            scale: 2
+        });
+        return canvas.toDataURL("image/png");
+    } finally {
+        document.body.classList.remove("capture-mode");
+    }
+}
+
+async function uploadCompletedImageToServer(imageDataUrl) {
+    const resp = await fetch(`/api/form/${FORM_DEF.form_id}/save-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_data_url: imageDataUrl })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        throw new Error(data.message || "서버 저장에 실패했습니다.");
+    }
+    return data;
+}
+
+async function downloadImage() {
+    const saveResult = await saveForm({ silent: false, autosave: false });
+    if (!saveResult.ok) return;
+
+    const status = await refreshStatus();
+
+    if (FORM_DEF.form_type === "group" && !status.document_completed) {
+        alert("공동양식은 조 전체 필수 입력이 완료되어야 다운로드할 수 있습니다.");
+        return;
+    }
+
+    if (!status.document_completed) {
+        alert("필수 입력이 완료되지 않아 다운로드할 수 없습니다.");
+        return;
+    }
+
+    try {
+        const imageDataUrl = await captureCurrentImageDataUrl();
+        const link = document.createElement("a");
+        link.href = imageDataUrl;
+        link.download = getNextDownloadFilename();
+        link.click();
+    } catch (e) {
+        alert("이미지 저장에 실패했습니다.");
+    }
+}
+
+function fitStageToViewport() {
+    captureArea.style.width = "100%";
+    requestAnimationFrame(() => {
+        setStageSize();
+        renderFields();
+    });
+}
+
+function openTextModal(field, key, value) {
+    ACTIVE_TEXT_KEY = key;
+    textModalTitle.textContent = field.label || "텍스트 입력";
+    textModalInput.value = value || "";
+    textModalInput.placeholder = field.placeholder || "";
+    if (field.max_length) {
+        textModalInput.maxLength = field.max_length;
+    } else {
+        textModalInput.removeAttribute("maxLength");
+    }
+    textModal.classList.add("show");
+    setTimeout(() => textModalInput.focus(), 50);
+}
+
+function closeTextModal() {
+    ACTIVE_TEXT_KEY = null;
+    textModal.classList.remove("show");
+}
+
+function fitCanvasResolution(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    return ctx;
+}
+
+function clearSignatureCanvas() {
+    const ctx = fitCanvasResolution(signatureModalCanvas);
+    const rect = signatureModalCanvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+}
+
+function drawDataUrlOnCanvas(canvas, dataUrl) {
+    if (!dataUrl) return;
+    const ctx = fitCanvasResolution(canvas);
+    const rect = canvas.getBoundingClientRect();
+    const image = new Image();
+    image.onload = () => {
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.drawImage(image, 0, 0, rect.width, rect.height);
+    };
+    image.src = dataUrl;
+}
+
+function bindSignatureDrawingOnce() {
+    if (SIGNATURE_DRAW_BOUND) return;
+    SIGNATURE_DRAW_BOUND = true;
+
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function getPos(e) {
+        const rect = signatureModalCanvas.getBoundingClientRect();
+        if (e.touches && e.touches[0]) {
+            return {
+                x: e.touches[0].clientX - rect.left,
+                y: e.touches[0].clientY - rect.top
+            };
+        }
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    function start(e) {
+        drawing = true;
+        const p = getPos(e);
+        lastX = p.x;
+        lastY = p.y;
+        e.preventDefault();
+    }
+
+    function move(e) {
+        if (!drawing) return;
+        const ctx = signatureModalCanvas.getContext("2d");
+        const p = getPos(e);
+        ctx.lineWidth = 4.4;
+        ctx.strokeStyle = "#111";
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        lastX = p.x;
+        lastY = p.y;
+        e.preventDefault();
+    }
+
+    function end(e) {
+        drawing = false;
+        if (e) e.preventDefault();
+    }
+
+    signatureModalCanvas.addEventListener("mousedown", start);
+    signatureModalCanvas.addEventListener("mousemove", move);
+    signatureModalCanvas.addEventListener("mouseup", end);
+    signatureModalCanvas.addEventListener("mouseleave", end);
+    signatureModalCanvas.addEventListener("touchstart", start, { passive: false });
+    signatureModalCanvas.addEventListener("touchmove", move, { passive: false });
+    signatureModalCanvas.addEventListener("touchend", end, { passive: false });
+}
+
+function openSignatureModal(field, key, value) {
+    ACTIVE_SIGNATURE_KEY = key;
+    signatureModalTitle.textContent = field.label || "서명 입력";
+    signatureModal.classList.add("show");
+
+    requestAnimationFrame(() => {
+        fitCanvasResolution(signatureModalCanvas);
+        bindSignatureDrawingOnce();
+        if (value) {
+            drawDataUrlOnCanvas(signatureModalCanvas, value);
+        } else {
+            clearSignatureCanvas();
+        }
+    });
+}
+
+function closeSignatureModal() {
+    ACTIVE_SIGNATURE_KEY = null;
+    signatureModal.classList.remove("show");
+}
+
+function isCanvasBlank(canvas) {
+    const temp = document.createElement("canvas");
+    temp.width = canvas.width;
+    temp.height = canvas.height;
+    return canvas.toDataURL() === temp.toDataURL();
+}
+
+const saveBtn = document.getElementById("saveBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+
+if (!ADMIN_VIEW) {
+    if (saveBtn) saveBtn.addEventListener("click", () => saveForm({ silent: false, autosave: false }));
+    if (downloadBtn) downloadBtn.addEventListener("click", downloadImage);
+    if (mobileSaveBtn) mobileSaveBtn.addEventListener("click", () => saveForm({ silent: false, autosave: false }));
+    if (mobileDownloadBtn) mobileDownloadBtn.addEventListener("click", downloadImage);
+}
+
+document.getElementById("textModalCancel").addEventListener("click", closeTextModal);
+document.getElementById("textModalConfirm").addEventListener("click", () => {
+    if (!ACTIVE_TEXT_KEY) return;
+    EDIT_STATE[ACTIVE_TEXT_KEY] = textModalInput.value || "";
+    closeTextModal();
+    renderFields();
+    scheduleAutoSave();
+});
+
+document.getElementById("signatureModalCancel").addEventListener("click", closeSignatureModal);
+document.getElementById("signatureModalClear").addEventListener("click", clearSignatureCanvas);
+document.getElementById("signatureModalConfirm").addEventListener("click", () => {
+    if (!ACTIVE_SIGNATURE_KEY) return;
+    EDIT_STATE[ACTIVE_SIGNATURE_KEY] = isCanvasBlank(signatureModalCanvas)
+        ? ""
+        : signatureModalCanvas.toDataURL("image/png");
+    closeSignatureModal();
+    renderFields();
+    scheduleAutoSave();
+});
+
+textModal.addEventListener("click", (e) => {
+    if (e.target === textModal) closeTextModal();
+});
+
+signatureModal.addEventListener("click", (e) => {
+    if (e.target === signatureModal) closeSignatureModal();
+});
+
+window.addEventListener("resize", () => {
+    if (!img.naturalWidth) return;
+    fitStageToViewport();
+});
+
+function initAfterImageLoad() {
+    initializeState();
+    LAST_SAVED_SNAPSHOT = snapshotState();
+    fitStageToViewport();
+    refreshStatus().then((data) => {
+        if (data?.document_status_text) {
+            setStatusPill(
+                data.document_status_text === "completed" ? "done" : "",
+                data.document_status_text
+            );
+        }
+    });
+    updateAutosaveText("자동 저장 대기 중");
+}
+
+if (img.complete) {
+    initAfterImageLoad();
+} else {
+    img.addEventListener("load", initAfterImageLoad);
+}
+</script>
+</body>
+</html>

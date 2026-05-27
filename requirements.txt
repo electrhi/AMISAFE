@@ -1,0 +1,7 @@
+Flask
+psycopg[binary]
+python-dotenv
+pandas
+openpyxl
+Pillow
+gunicorn

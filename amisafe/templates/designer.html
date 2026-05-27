@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AMISAFE 양식 디자이너</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+               background: #eef3f8; color: #1f2937; }
+        .topbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fff;
+                  box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 100; }
+        .topbar h1 { margin: 0; font-size: 16px; flex: 0 0 auto; }
+        .topbar .spacer { flex: 1; }
+        .btn { display: inline-block; padding: 7px 12px; background: #1f6feb; color: #fff;
+               border: 0; border-radius: 6px; text-decoration: none; font-size: 13px; cursor: pointer; }
+        .btn:hover { background: #1859be; }
+        .btn.gray { background: #e5e7eb; color: #1f2937; }
+        .btn.gray:hover { background: #d1d5db; }
+        .btn.green { background: #16a34a; }
+        .btn.green:hover { background: #128a3e; }
+        .btn.red { background: #dc2626; }
+        .btn.red:hover { background: #b91c1c; }
+        .btn.small { padding: 4px 8px; font-size: 12px; }
+
+        .layout { display: grid; grid-template-columns: 240px 1fr 320px; gap: 8px; padding: 8px;
+                  height: calc(100vh - 60px); }
+        .panel { background: #fff; border-radius: 8px; padding: 12px; overflow-y: auto; }
+        .panel h3 { margin: 0 0 10px; font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb;
+                    padding-bottom: 6px; }
+        .panel h4 { margin: 12px 0 6px; font-size: 13px; color: #4b5563; }
+
+        /* Forms list */
+        .form-list { list-style: none; padding: 0; margin: 0; }
+        .form-list li { padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; cursor: pointer;
+                        font-size: 13px; border: 1px solid transparent; }
+        .form-list li:hover { background: #f3f4f6; }
+        .form-list li.active { background: #dbeafe; border-color: #93c5fd; font-weight: 600; }
+
+        /* Canvas */
+        .canvas-wrap { background: #fff; border-radius: 8px; position: relative; overflow: auto; }
+        .canvas-toolbar { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; display: flex;
+                          gap: 6px; align-items: center; flex-wrap: wrap; }
+        .canvas-toolbar select, .canvas-toolbar input[type="text"] {
+            padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 13px; }
+        .canvas-host { position: relative; min-height: 400px; padding: 16px; }
+        .canvas-stage { position: relative; display: inline-block; user-select: none;
+                        background: #f9fafb; border: 1px solid #e5e7eb; }
+        .canvas-stage img { display: block; max-width: none; pointer-events: none; }
+        .field-overlay { position: absolute; border: 1.5px solid #1f6feb; background: rgba(31,111,235,0.08);
+                         font-size: 11px; padding: 1px 3px; cursor: move; box-sizing: border-box;
+                         line-height: 1.1; color: #1f2937; }
+        .field-overlay.selected { border-color: #dc2626; background: rgba(220,38,38,0.12);
+                                  box-shadow: 0 0 0 2px rgba(220,38,38,0.3); z-index: 10; }
+        .field-overlay.t-signature { background: rgba(34,197,94,0.1); border-color: #16a34a; }
+        .field-overlay.t-text { background: rgba(168,85,247,0.1); border-color: #9333ea; }
+        .field-overlay.t-checkbox { background: rgba(245,158,11,0.1); border-color: #d97706; }
+        .field-overlay.t-label { background: rgba(107,114,128,0.1); border-color: #6b7280; }
+        .field-overlay.t-date { background: rgba(14,165,233,0.1); border-color: #0284c7; }
+        .field-overlay.t-dropdown { background: rgba(244,114,182,0.1); border-color: #db2777; }
+
+        .canvas-hint { position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+                       background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 6px;
+                       font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: none; }
+        .canvas-hint.show { display: block; }
+
+        /* Right panel - properties */
+        .prop-row { margin-bottom: 8px; }
+        .prop-row label { display: block; font-size: 12px; color: #6b7280; margin-bottom: 2px; }
+        .prop-row input, .prop-row select, .prop-row textarea {
+            width: 100%; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 5px;
+            font-size: 13px; box-sizing: border-box; font-family: inherit; }
+        .prop-row.inline { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .prop-row.checkbox-row { display: flex; align-items: center; gap: 6px; }
+        .prop-row.checkbox-row input { width: auto; }
+        .options-block { background: #f9fafb; padding: 8px; border-radius: 6px; margin-top: 8px; }
+        .options-block table { width: 100%; font-size: 12px; border-collapse: collapse; }
+        .options-block table th, .options-block table td { padding: 3px; }
+        .options-block table input { width: 100%; padding: 3px 5px; font-size: 12px; }
+
+        /* Form meta editor */
+        .form-meta { padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 12px; }
+
+        /* Modal */
+        .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+                      display: none; align-items: center; justify-content: center; }
+        .modal-mask.show { display: flex; }
+        .modal { background: #fff; border-radius: 10px; padding: 20px; min-width: 360px;
+                 max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { margin: 0 0 12px; }
+
+        /* Statusbar */
+        .statusbar { padding: 6px 12px; background: #f9fafb; border-top: 1px solid #e5e7eb;
+                     font-size: 12px; color: #6b7280; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 10px; }
+        .tab { padding: 6px 10px; cursor: pointer; font-size: 13px; border-radius: 6px 6px 0 0; color: #6b7280; }
+        .tab.active { background: #f3f4f6; color: #1f6feb; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .empty-msg { padding: 30px; text-align: center; color: #9ca3af; font-size: 13px; }
+        .pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px;
+                background: #e5e7eb; color: #374151; margin-right: 4px; }
+
+        @media (max-width: 1100px) {
+            .layout { grid-template-columns: 1fr; height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>🎨 AMISAFE 양식 디자이너</h1>
+        <span class="pill">{{ user.name }}</span>
+        <span class="spacer"></span>
+        <button id="btn-new-form" class="btn green">＋ 새 양식</button>
+        <button id="btn-save-all" class="btn">💾 전체 저장</button>
+        <a href="/admin" class="btn gray">관리자 홈</a>
+        <a href="/logout" class="btn gray">로그아웃</a>
+    </div>
+
+    <div class="layout">
+        <!-- LEFT: form list -->
+        <div class="panel">
+            <h3>양식 목록</h3>
+            <ul class="form-list" id="form-list"></ul>
+        </div>
+
+        <!-- CENTER: canvas + meta -->
+        <div class="canvas-wrap">
+            <div class="canvas-toolbar">
+                <button id="btn-delete-form" class="btn red small">현 양식 삭제</button>
+                <span style="border-left: 1px solid #d1d5db; height: 18px; margin: 0 4px;"></span>
+                <label style="font-size:12px;">필드 추가:</label>
+                <button class="btn small" data-add-field="checkbox">체크박스</button>
+                <button class="btn small" data-add-field="choice_group">확인/해당없음</button>
+                <button class="btn small" data-add-field="dropdown">목록박스</button>
+                <button class="btn small" data-add-field="date">날짜</button>
+                <button class="btn small" data-add-field="signature">서명</button>
+                <button class="btn small" data-add-field="text">입력칸</button>
+                <button class="btn small" data-add-field="label">안내문구</button>
+                <span class="spacer" style="flex:1"></span>
+                <span style="font-size:12px;">확대:</span>
+                <button class="btn gray small" id="btn-zoom-out">−</button>
+                <span id="zoom-label" style="font-size:12px;width:48px;text-align:center">100%</span>
+                <button class="btn gray small" id="btn-zoom-in">＋</button>
+                <button class="btn gray small" id="btn-zoom-fit">Fit</button>
+            </div>
+            <div class="canvas-host" id="canvas-host">
+                <div class="canvas-hint" id="canvas-hint">캔버스를 클릭해서 필드를 배치하세요</div>
+                <div class="empty-msg" id="canvas-empty">왼쪽에서 양식을 선택하거나 새 양식을 만드세요.</div>
+                <div class="canvas-stage" id="canvas-stage" style="display:none;">
+                    <img id="canvas-img" alt="">
+                </div>
+            </div>
+            <div class="statusbar" id="statusbar">준비됨.</div>
+        </div>
+
+        <!-- RIGHT: properties / form meta -->
+        <div class="panel">
+            <div class="tabs">
+                <div class="tab active" data-tab="form-meta-tab">양식 정보</div>
+                <div class="tab" data-tab="field-prop-tab">필드 속성</div>
+                <div class="tab" data-tab="tools-tab">도구</div>
+            </div>
+
+            <!-- TAB 1: form meta -->
+            <div class="tab-content active" id="form-meta-tab">
+                <div class="prop-row">
+                    <label>form_id (영문/한글)</label>
+                    <input type="text" id="meta-form-id">
+                </div>
+                <div class="prop-row">
+                    <label>양식 이름</label>
+                    <input type="text" id="meta-form-name">
+                </div>
+                <div class="prop-row">
+                    <label>양식 종류</label>
+                    <select id="meta-form-type">
+                        <option value="individual">개인양식 - 작업자별</option>
+                        <option value="group">공동양식 - 조 단위</option>
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>배경 이미지</label>
+                    <select id="meta-image-file">
+                        <option value="">(이미지 선택)</option>
+                        {% for f in image_files %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>이미지 새로 업로드</label>
+                    <input type="file" id="meta-image-upload" accept="image/*">
+                </div>
+                <div class="prop-row checkbox-row">
+                    <input type="checkbox" id="meta-active">
+                    <label for="meta-active">사용 (active)</label>
+                </div>
+                <div class="prop-row">
+                    <label>허용 역할 (콤마 구분, 비우면 전체)</label>
+                    <input type="text" id="meta-allowed-roles" placeholder="작업원,작업책임자">
+                </div>
+                <button class="btn" id="btn-apply-meta" style="width:100%;margin-top:8px;">양식 정보 적용</button>
+            </div>
+
+            <!-- TAB 2: field properties -->
+            <div class="tab-content" id="field-prop-tab">
+                <div id="no-field-msg" class="empty-msg">선택된 필드가 없습니다.</div>
+                <div id="field-props" style="display:none;">
+                    <div class="prop-row">
+                        <label>field_id</label>
+                        <input type="text" id="fp-field-id">
+                    </div>
+                    <div class="prop-row">
+                        <label>label (표시 텍스트)</label>
+                        <input type="text" id="fp-label">
+                    </div>
+                    <div class="prop-row">
+                        <label>type</label>
+                        <select id="fp-type">
+                            <option value="checkbox">체크박스</option>
+                            <option value="choice_group">확인/해당없음</option>
+                            <option value="dropdown">목록박스</option>
+                            <option value="date">날짜</option>
+                            <option value="signature">서명</option>
+                            <option value="text">입력칸</option>
+                            <option value="label">안내문구</option>
+                        </select>
+                    </div>
+                    <div class="prop-row inline">
+                        <div><label>x</label><input type="number" id="fp-x"></div>
+                        <div><label>y</label><input type="number" id="fp-y"></div>
+                    </div>
+                    <div class="prop-row inline">
+                        <div><label>width</label><input type="number" id="fp-width"></div>
+                        <div><label>height</label><input type="number" id="fp-height"></div>
+                    </div>
+                    <div class="prop-row">
+                        <label>target_role</label>
+                        <select id="fp-target-role">
+                            <option value="공통">공통</option>
+                            <option value="작업원">작업원</option>
+                            <option value="작업책임자">작업책임자</option>
+                        </select>
+                    </div>
+                    <div class="prop-row">
+                        <label>slot_index (공동양식 슬롯, 비우면 공통)</label>
+                        <input type="text" id="fp-slot-index">
+                    </div>
+                    <div class="prop-row checkbox-row">
+                        <input type="checkbox" id="fp-required">
+                        <label for="fp-required">required (필수)</label>
+                    </div>
+                    <div class="prop-row checkbox-row">
+                        <input type="checkbox" id="fp-visible" checked>
+                        <label for="fp-visible">visible (표시)</label>
+                    </div>
+
+                    <!-- label 전용 -->
+                    <div class="prop-row" id="fp-bind-row" style="display:none;">
+                        <label>bind_key (자동 채움)</label>
+                        <select id="fp-bind-key">
+                            <option value="">(고정 텍스트)</option>
+                            <option value="name">이름 (name)</option>
+                            <option value="id">사번 (id)</option>
+                            <option value="group">조 (group)</option>
+                            <option value="role">역할 (role)</option>
+                            <option value="date">날짜 (date)</option>
+                        </select>
+                    </div>
+
+                    <!-- choice_group / dropdown options -->
+                    <div class="options-block" id="fp-options-block" style="display:none;">
+                        <h4 id="fp-options-title">옵션</h4>
+                        <table id="fp-options-table">
+                            <thead><tr><th>라벨</th><th>값</th><th></th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <button class="btn gray small" id="fp-add-option" style="margin-top:4px;">＋ 옵션 추가</button>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;">
+                        <button class="btn" id="btn-apply-field">변경 적용</button>
+                        <button class="btn red" id="btn-delete-field">필드 삭제</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: tools -->
+            <div class="tab-content" id="tools-tab">
+                <h4>대/소분류 엑셀 자동 적용 (목록박스)</h4>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">
+                    A열=대분류, B열=소분류. 선택된 dropdown 필드의 옵션이 자동 교체됩니다.
+                </div>
+                <input type="file" id="excel-import-file" accept=".xlsx" style="margin-bottom:6px;">
+                <button class="btn" id="btn-import-excel" style="width:100%;">엑셀 자동 적용</button>
+                <button class="btn gray" id="btn-download-template" style="width:100%;margin-top:6px;">엑셀 양식 다운로드</button>
+
+                <h4 style="margin-top:18px;">JSON 직접 편집</h4>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">
+                    고급 사용자용. 현재 양식의 raw JSON을 확인/편집할 수 있습니다.
+                </div>
+                <textarea id="raw-json-editor" rows="10" style="width:100%;font-family:monospace;font-size:11px;"></textarea>
+                <button class="btn gray" id="btn-apply-raw-json" style="width:100%;margin-top:4px;">현재 양식에 적용</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      window.AMISAFE_IMAGE_FILES = {{ image_files | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='designer/designer.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AMISAFE 관리자</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #eef3f8;
+            color: #1f2937;
+        }
+        .wrap {
+            max-width: 1380px;
+            margin: 16px auto;
+            padding: 0 12px 24px;
+        }
+        .page-head {
+            background: linear-gradient(135deg, #0f172a, #1d4ed8);
+            color: white;
+            border-radius: 18px;
+            padding: 18px 20px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+        }
+        .page-head h2 {
+            margin: 0 0 6px 0;
+            font-size: 24px;
+        }
+        .page-head .sub {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .top-actions {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 42px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 12px;
+            background: #2563eb;
+            color: white;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn.gray { background: #64748b; }
+        .btn.green { background: #059669; }
+
+        .card {
+            margin-top: 16px;
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+        }
+        .card h3 {
+            margin: 0 0 14px 0;
+            font-size: 20px;
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .filter-row label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .filter-row input[type="date"] {
+            height: 42px;
+            padding: 0 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 15px;
+            background: white;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+            color: #475569;
+            font-size: 13px;
+        }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            flex: 0 0 16px;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75), 0 0 0 1px rgba(0,0,0,0.08);
+        }
+        .status-dot.done { background: #16a34a; }
+        .status-dot.not-done { background: #dc2626; }
+        .status-dot.no-doc { background: #cbd5e1; }
+
+        .desktop-only { display: block; }
+        .mobile-only { display: none; }
+
+        .admin-grid-wrap {
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: white;
+        }
+        table.admin-grid {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1100px;
+        }
+        .admin-grid th,
+        .admin-grid td {
+            border-bottom: 1px solid #edf2f7;
+            border-right: 1px solid #f1f5f9;
+            padding: 12px 10px;
+            text-align: center;
+            vertical-align: middle;
+            background: white;
+        }
+        .admin-grid th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #f8fafc;
+            font-size: 14px;
+        }
+        .admin-grid th:first-child,
+        .admin-grid td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+            text-align: left;
+            min-width: 220px;
+        }
+        .user-name {
+            font-weight: 800;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        .user-meta {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .form-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #111827;
+            font-weight: 700;
+            line-height: 1.35;
+            padding: 4px 6px;
+            border-radius: 10px;
+        }
+        .form-link:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        .saved-actions {
+            margin-top: 6px;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .saved-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .saved-link:hover {
+            background: #dbeafe;
+        }
+
+        .mobile-status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .mobile-user-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        }
+        .mobile-user-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+        .mobile-user-meta {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .mobile-form-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .mobile-form-item,
+        .mobile-form-item:visited {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            text-decoration: none;
+            color: #111827;
+            font-weight: 700;
+            min-height: unset;
+            height: auto;
+        }
+        .mobile-form-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .mobile-form-name {
+            word-break: keep-all;
+            line-height: 1.35;
+        }
+
+        .group-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+        }
+        .group-col {
+            background: #f8fafc;
+            border: 1px solid #dbe5ef;
+            border-radius: 16px;
+            padding: 12px;
+        }
+        .group-col h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        .dropzone {
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .member-card {
+            background: white;
+            border: 1px solid #dbe5ef;
+            border-radius: 14px;
+            padding: 10px 12px;
+            cursor: grab;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+        .member-card:active {
+            cursor: grabbing;
+        }
+        .member-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .member-name {
+            font-weight: 800;
+            font-size: 15px;
+        }
+        .member-id {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            background: #e0ecff;
+            color: #1d4ed8;
+            white-space: nowrap;
+        }
+
+        .save-row {
+            margin-top: 14px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            .wrap { padding: 0 8px 18px; }
+            .page-head { border-radius: 14px; padding: 14px; }
+            .page-head h2 { font-size: 20px; }
+            .card { border-radius: 14px; padding: 14px; }
+            .btn { height: 40px; padding: 0 12px; font-size: 14px; }
+            .filter-row input[type="date"] { width: 100%; }
+            .desktop-only { display: none; }
+            .mobile-only { display: block; }
+            .legend {
+                gap: 10px;
+                font-size: 12px;
+                align-items: center;
+            }
+            .legend-item {
+                gap: 6px;
+                white-space: nowrap;
+            }
+            .group-board {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .group-col {
+                padding: 12px;
+                border-radius: 14px;
+            }
+            .member-card {
+                padding: 10px 12px;
+                border-radius: 12px;
+            }
+            .member-name {
+                font-size: 16px;
+            }
+            .member-id {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="page-head">
+            <h2>관리자 화면</h2>
+            <div class="sub">{{ user.name }} 님으로 로그인됨</div>
+            <div class="top-actions">
+                <a class="btn" href="/admin">제출 현황</a>
+                <a class="btn green" href="#group-board">조편성</a>
+                <a class="btn gray" href="/admin/config">양식설정(JSON)</a>
+                <a class="btn gray" href="/designer">🎨 양식 디자이너</a>
+                <a class="btn gray" href="/logout">로그아웃</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>날짜별 제출 현황</h3>
+            <form method="get" action="/admin" class="filter-row">
+                <label>
+                    조회 날짜
+                    <input type="date" name="work_date" value="{{ selected_date }}">
+                </label>
+                <button class="btn" type="submit">조회</button>
+            </form>
+
+            <div class="legend">
+                <div class="legend-item"><span class="status-dot done"></span> 작성 완료</div>
+                <div class="legend-item"><span class="status-dot not-done"></span> 미작성 / 미완료</div>
+                <div class="legend-item"><span class="status-dot no-doc"></span> 대상 아님 / 문서 없음</div>
+            </div>
+
+            <div class="desktop-only">
+                <div class="admin-grid-wrap">
+                    <table class="admin-grid">
+                        <thead>
+                            <tr>
+                                <th>사용자</th>
+                                {% for form in forms %}
+                                    <th>{{ form.form_name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in status_rows %}
+                            <tr>
+                                <td>
+                                    <div class="user-name">{{ row.user.group }}조 · {{ row.user.name }}</div>
+                                    <div class="user-meta">
+                                        ID: {{ row.user.id }}<br>
+                                        구분: {{ row.user.role }} / 슬롯: {{ row.user.slot_index }}
+                                    </div>
+                                </td>
+                                {% for item in row.form_items %}
+                                <td>
+                                    {% if item.open_url %}
+                                        <a class="form-link" href="{{ item.open_url }}">
+                                            <span class="status-dot {{ item.dot_class }}"></span>
+                                            <span>{{ item.form_name }}</span>
+                                        </a>
+                                    {% else %}
+                                        <div class="form-link" style="cursor:default;">
+                                            <span class="status-dot {{ item.dot_class }}"></span>
+                                            <span>{{ item.form_name }}</span>
+                                        </div>
+                                    {% endif %}
+                                    {% if item.saved_view_url %}
+                                        <div class="saved-actions">
+                                            <a class="saved-link" href="{{ item.saved_view_url }}" target="_blank">열기</a>
+                                            <a class="saved-link" href="{{ item.saved_download_url }}">다운로드</a>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mobile-only">
+                <div class="mobile-status-list">
+                    {% for row in status_rows %}
+                    <div class="mobile-user-card">
+                        <div class="mobile-user-title">{{ row.user.group }}조 · {{ row.user.name }}</div>
+                        <div class="mobile-user-meta">
+                            ID: {{ row.user.id }} / {{ row.user.role }} / 슬롯 {{ row.user.slot_index }}
+                        </div>
+                        <div class="mobile-form-list">
+                            {% for item in row.form_items %}
+                                {% if item.open_url %}
+                                <div>
+                                    <a class="mobile-form-item" href="{{ item.open_url }}">
+                                        <div class="mobile-form-left">
+                                            <span class="status-dot {{ item.dot_class }}"></span>
+                                            <span class="mobile-form-name">{{ item.form_name }}</span>
+                                        </div>
+                                    </a>
+                                    {% if item.saved_view_url %}
+                                    <div class="saved-actions" style="justify-content:flex-start; margin-top:6px;">
+                                        <a class="saved-link" href="{{ item.saved_view_url }}" target="_blank">열기</a>
+                                        <a class="saved-link" href="{{ item.saved_download_url }}">다운로드</a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div>
+                                    <div class="mobile-form-item">
+                                        <div class="mobile-form-left">
+                                            <span class="status-dot {{ item.dot_class }}"></span>
+                                            <span class="mobile-form-name">{{ item.form_name }}</span>
+                                        </div>
+                                    </div>
+                                    {% if item.saved_view_url %}
+                                    <div class="saved-actions" style="justify-content:flex-start; margin-top:6px;">
+                                        <a class="saved-link" href="{{ item.saved_view_url }}" target="_blank">열기</a>
+                                        <a class="saved-link" href="{{ item.saved_download_url }}">다운로드</a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="group-board">
+            <h3>조편성 인원 조정</h3>
+            <div class="group-board">
+                {% for group_name, members in group_map.items() %}
+                <div class="group-col">
+                    <h4>{{ group_name }}조</h4>
+                    <div class="dropzone" data-group="{{ group_name }}">
+                        {% for m in members %}
+                        <div class="member-card"
+                             data-user-id="{{ m.id }}"
+                             data-role="{{ m.role }}"
+                             data-slot-index="{{ m.slot_index }}">
+                            <div class="member-top">
+                                <div class="member-name">{{ m.group }}조 · {{ m.name }}</div>
+                                <div class="pill role-pill">{{ m.role }}</div>
+                            </div>
+                            <div class="member-id">{{ m.id }} / 슬롯 {{ m.slot_index }}</div>
+                            <div style="margin-top:8px;">
+                                <select class="role-select" style="width:100%; height:36px; border:1px solid #dbe5ef; border-radius:10px; padding:0 10px; background:#fff;">
+                                    <option value="작업원" {% if m.role == "작업원" %}selected{% endif %}>작업원</option>
+                                    <option value="작업책임자" {% if m.role == "작업책임자" %}selected{% endif %}>작업책임자</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="save-row">
+                <button class="btn" type="button" id="saveGroupBtn">조편성 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script>
+        const zones = document.querySelectorAll(".dropzone");
+
+        zones.forEach((zone) => {
+            new Sortable(zone, {
+                group: "groups",
+                animation: 180,
+                ghostClass: "drag-ghost",
+            });
+        });
+
+        document.querySelectorAll(".role-select").forEach((select) => {
+            select.addEventListener("change", (e) => {
+                const card = e.target.closest(".member-card");
+                if (!card) return;
+                card.dataset.role = e.target.value;
+                const pill = card.querySelector(".role-pill");
+                if (pill) pill.textContent = e.target.value;
+            });
+        });
+
+        document.getElementById("saveGroupBtn").addEventListener("click", async () => {
+            const assignments = [];
+
+            document.querySelectorAll(".dropzone").forEach((zone) => {
+                const groupName = zone.dataset.group;
+                [...zone.querySelectorAll(".member-card")].forEach((card, idx) => {
+                    const roleSelect = card.querySelector(".role-select");
+                    const role = roleSelect ? roleSelect.value : (card.dataset.role || "작업원");
+                    assignments.push({
+                        user_id: card.dataset.userId,
+                        group: groupName,
+                        slot_index: idx + 1,
+                        role: role
+                    });
+                });
+            });
+
+            const resp = await fetch("/admin/groups/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assignments })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.ok) {
+                alert(data.message || "저장에 실패했습니다.");
+                return;
+            }
+            alert("조편성이 저장되었습니다.");
+            location.reload();
+        });
+    </script>
+</body>
+</html>

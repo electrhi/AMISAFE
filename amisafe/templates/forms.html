@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AMISAFE 양식 목록</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #eef3f8;
+            color: #1f2937;
+        }
+        .wrap {
+            max-width: 980px;
+            margin: 16px auto;
+            padding: 0 12px 24px;
+        }
+        .page-head {
+            background: linear-gradient(135deg, #0f172a, #1d4ed8);
+            color: white;
+            border-radius: 18px;
+            padding: 18px 20px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+        }
+        .page-head h2 {
+            margin: 0 0 6px 0;
+            font-size: 24px;
+        }
+        .page-head .sub {
+            opacity: 0.92;
+            font-size: 14px;
+        }
+        .top-actions {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 42px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 12px;
+            background: #2563eb;
+            color: white;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn.gray { background: #64748b; }
+        .card {
+            margin-top: 16px;
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+        }
+        .card h3 {
+            margin: 0 0 14px 0;
+            font-size: 20px;
+        }
+        .form-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+        }
+        .form-card {
+            display: block;
+            text-decoration: none;
+            color: #111827;
+            background: #f8fafc;
+            border: 1px solid #dbe5ef;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .form-card:hover {
+            transform: translateY(-2px);
+            border-color: #bfdbfe;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        .form-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            line-height: 1.35;
+        }
+        .form-meta {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .badge.group { background: #e0ecff; color: #1d4ed8; }
+        .badge.individual { background: #e8f7ee; color: #15803d; }
+        .empty-box {
+            padding: 24px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            text-align: center;
+            color: #64748b;
+            background: #f8fafc;
+        }
+        @media (max-width: 768px) {
+            .wrap { padding: 0 8px 18px; }
+            .page-head { border-radius: 14px; padding: 14px; }
+            .page-head h2 { font-size: 20px; }
+            .card { border-radius: 14px; padding: 14px; }
+            .btn { height: 40px; padding: 0 12px; font-size: 14px; }
+            .form-list { grid-template-columns: 1fr; gap: 12px; }
+            .form-card { padding: 14px; border-radius: 14px; }
+            .form-title { font-size: 17px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="page-head">
+            <h2>양식 목록</h2>
+            <div class="sub">{{ user.group }}조 · {{ user.name }} ({{ user.id }}) / {{ user.role }}</div>
+            <div class="top-actions">
+                <a class="btn gray" href="/logout">로그아웃</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>작성 가능한 양식</h3>
+
+            {% if forms %}
+            <div class="form-list">
+                {% for form in forms %}
+                <a class="form-card" href="/form/{{ form.form_id }}">
+                    {% if form.form_type == "group" %}
+                        <div class="badge group">공동양식</div>
+                    {% else %}
+                        <div class="badge individual">개인양식</div>
+                    {% endif %}
+
+                    <div class="form-title">{{ form.form_name }}</div>
+                    <div class="form-meta">
+                        form_id: {{ form.form_id }}<br>
+                        설명: {{ form.description or "-" }}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-box">
+                현재 작성 가능한 양식이 없습니다.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
