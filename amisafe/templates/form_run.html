@@ -168,6 +168,24 @@
             color: #999;
         }
 
+        .date-input {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            background: rgba(255, 255, 255, 0.72);
+            border-radius: 10px;
+            padding: 2px 6px;
+            color: #111827;
+            font-family: inherit;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+        }
+
+        .date-input.required-empty {
+            border-color: #d93025;
+            background: rgba(255, 244, 244, 0.95);
+        }
+
         .checkbox-box {
             width: 100%;
             height: 100%;
@@ -1028,6 +1046,35 @@ function createEditableText(field, key, value, uiScale) {
     return btn;
 }
 
+function createEditableDateInput(field, key, value, uiScale, inputType) {
+    const input = document.createElement("input");
+    input.type = inputType; // "date" | "datetime-local"
+    input.className = "date-input";
+    input.value = value || "";
+    if (field.required && isEmptyValue(field, value)) {
+        input.classList.add("required-empty");
+    }
+    input.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    input.dataset.fieldKey = key;
+
+    input.addEventListener("change", () => {
+        EDIT_STATE[key] = input.value;
+        renderFields();
+        scheduleAutoSave();
+    });
+
+    return input;
+}
+
+function createReadonlyDateInput(value, uiScale) {
+    const wrap = document.createElement("div");
+    wrap.className = "readonly-box";
+    // 저장 형식(2026-05-28T09:30)을 보기 좋게 공백 구분으로 표시
+    wrap.textContent = value ? String(value).replace("T", " ") : "";
+    wrap.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    return wrap;
+}
+
 function createEditableCheckbox(field, key, value, uiScale) {
     const box = document.createElement("button");
     box.type = "button";
@@ -1211,6 +1258,11 @@ function renderFields() {
                 : createReadonlyChoiceGroup(field, value, rect, scales);
         } else if (field.type === "signature") {
             node = editable ? createEditableSignature(field, key, value, uiScale) : createReadonlySignature(value);
+        } else if (field.type === "date" || field.type === "datetime") {
+            const inputType = field.type === "datetime" ? "datetime-local" : "date";
+            node = editable
+                ? createEditableDateInput(field, key, value, uiScale, inputType)
+                : createReadonlyDateInput(value, uiScale);
         } else {
             node = createReadonlyText(value, uiScale);
         }
@@ -1245,6 +1297,9 @@ function validateClientSide() {
             missing.push(field.label || field.field_id);
         }
         if (field.type === "signature" && (!value || String(value).trim() === "")) {
+            missing.push(field.label || field.field_id);
+        }
+        if ((field.type === "date" || field.type === "datetime") && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
     });
