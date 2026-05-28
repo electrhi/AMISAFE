@@ -31,7 +31,6 @@
     choice_group: { width: 100, height: 24, label: '확인/해당없음' },
     dropdown:     { width: 170, height: 34, label: '목록선택' },
     date:         { width: 150, height: 34, label: '날짜' },
-    datetime:     { width: 210, height: 34, label: '날짜시간' },
     signature:    { width: 170, height: 45, label: '서명' },
     text:         { width: 180, height: 32, label: '입력' },
     label:        { width: 150, height: 28, label: '안내문구' },
@@ -326,8 +325,6 @@
       newField.placeholder = '선택하세요';
     } else if (type === 'date') {
       newField.placeholder = 'YYYY-MM-DD';
-    } else if (type === 'datetime') {
-      newField.placeholder = 'YYYY-MM-DD HH:MM';
     } else if (type === 'text') {
       newField.placeholder = '입력하세요';
     } else if (type === 'label') {

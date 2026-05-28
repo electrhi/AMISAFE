@@ -126,7 +126,7 @@ def validate_submission_for_current_user(form, user, submitted_values):
             missing.append(label)
         elif ftype == "signature" and (val is None or str(val).strip() == ""):
             missing.append(label)
-        elif ftype in ("date", "datetime") and (val is None or str(val).strip() == ""):
+        elif ftype == "date" and (val is None or str(val).strip() == ""):
             missing.append(label)
 
     return missing
@@ -185,7 +185,7 @@ def save_submission(document, form, user, submitted_values):
                 elif ftype == "signature" and val is not None and str(val).strip() != "":
                     value_image = str(val)
                     is_completed = True
-                elif ftype in ("date", "datetime") and val is not None and str(val).strip() != "":
+                elif ftype == "date" and val is not None and str(val).strip() != "":
                     value_text = str(val)
                     is_completed = True
 
@@ -271,7 +271,7 @@ def field_has_completed_value(form, field, user, all_values):
         return val is not None and str(val).strip() != ""
     if ftype == "signature":
         return val is not None and str(val).strip() != ""
-    if ftype in ("date", "datetime"):
+    if ftype == "date":
         return val is not None and str(val).strip() != ""
     return True
 

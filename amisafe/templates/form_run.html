@@ -1048,7 +1048,7 @@ function createEditableText(field, key, value, uiScale) {
 
 function createEditableDateInput(field, key, value, uiScale, inputType) {
     const input = document.createElement("input");
-    input.type = inputType; // "date" | "datetime-local"
+    input.type = inputType; // 현재 "date"만 사용
     input.className = "date-input";
     input.value = value || "";
     if (field.required && isEmptyValue(field, value)) {
@@ -1292,10 +1292,9 @@ function renderFields() {
                 : createReadonlyChoiceGroup(field, value, rect, scales);
         } else if (field.type === "signature") {
             node = editable ? createEditableSignature(field, key, value, uiScale) : createReadonlySignature(value);
-        } else if (field.type === "date" || field.type === "datetime") {
-            const inputType = field.type === "datetime" ? "datetime-local" : "date";
+        } else if (field.type === "date") {
             node = editable
-                ? createEditableDateInput(field, key, value, uiScale, inputType)
+                ? createEditableDateInput(field, key, value, uiScale, "date")
                 : createReadonlyDateInput(value, uiScale);
         } else if (field.type === "dropdown") {
             node = editable
@@ -1337,7 +1336,7 @@ function validateClientSide() {
         if (field.type === "signature" && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
-        if ((field.type === "date" || field.type === "datetime") && (!value || String(value).trim() === "")) {
+        if (field.type === "date" && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
     });
