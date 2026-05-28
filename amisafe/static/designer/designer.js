@@ -559,6 +559,75 @@
     setStatus('양식 삭제됨');
   }
 
+  // ===== AI 자동 필드 인식 =====
+  async function autoDetectFields() {
+    const f = currentForm();
+    if (!f) return alert('선택된 양식이 없습니다.');
+    if (!f.image_file) return alert('먼저 배경 이미지를 선택하거나 업로드하세요.');
+
+    const ok = confirm(
+      '현재 배경 이미지에서 입력 영역(텍스트·날짜·체크박스·서명)을 AI로 자동 인식해 필드로 추가합니다.\n\n' +
+      '• OpenAI 호출 비용이 발생합니다.\n' +
+      '• 인식 결과는 초안이므로 위치/크기를 미세 조정해야 할 수 있습니다.\n\n계속할까요?'
+    );
+    if (!ok) return;
+
+    const btn = $('#btn-auto-detect');
+    const prevLabel = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '🪄 인식 중... (수십 초 소요)'; }
+    setStatus('AI 자동 인식 중... 잠시만 기다려 주세요.');
+
+    try {
+      const resp = await fetch('/designer/api/auto-detect-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: f.image_file }),
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.message || '인식 실패');
+
+      // 비율 좌표(0~1) → 이미지 실제 픽셀 좌표로 변환
+      const imgW = (state.imageNaturalSize && state.imageNaturalSize.w) || 1000;
+      const imgH = (state.imageNaturalSize && state.imageNaturalSize.h) || 1400;
+
+      const detected = data.fields || [];
+      detected.forEach((det) => {
+        const defs = FIELD_TYPE_DEFAULTS[det.type] || FIELD_TYPE_DEFAULTS.text;
+        const newField = {
+          field_id: genFieldId(f, det.type),
+          label: det.label || defs.label,
+          type: det.type,
+          x: Math.round(det.x_pct * imgW),
+          y: Math.round(det.y_pct * imgH),
+          width: Math.max(12, Math.round(det.w_pct * imgW)),
+          height: Math.max(12, Math.round(det.h_pct * imgH)),
+          required: det.type !== 'label',
+          target_role: '공통',
+          slot_index: null,
+          visible: true,
+        };
+        if (det.type === 'date') newField.placeholder = 'YYYY-MM-DD';
+        else if (det.type === 'text') newField.placeholder = '입력하세요';
+
+        f.fields = f.fields || [];
+        f.fields.push(newField);
+      });
+
+      drawFields();
+      renderFieldProps();
+      refreshFormList();
+      setStatus(`자동 인식 완료: ${detected.length}개 필드 추가됨 (위치 미세조정 후 저장하세요)`);
+      if (detected.length === 0) {
+        alert('인식된 입력 영역이 없습니다. 이미지가 너무 작거나 폼이 비어 있을 수 있어요.');
+      }
+    } catch (err) {
+      setStatus('자동 인식 실패: ' + err.message, true);
+      alert('자동 인식 실패: ' + err.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = prevLabel; }
+    }
+  }
+
   // ===== Tabs =====
   function activateTab(tabId) {
     $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tabId));
@@ -628,6 +697,7 @@
     $('#btn-save-all').addEventListener('click', saveAll);
     $('#btn-delete-form').addEventListener('click', deleteCurrentForm);
     $('#btn-apply-meta').addEventListener('click', applyMetaForm);
+    $('#btn-auto-detect').addEventListener('click', autoDetectFields);
 
     // Image upload (meta tab)
     $('#meta-image-upload').addEventListener('change', async (e) => {
