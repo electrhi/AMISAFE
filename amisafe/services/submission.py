@@ -122,7 +122,7 @@ def validate_submission_for_current_user(form, user, submitted_values):
             missing.append(label)
         elif ftype == "checkbox" and not bool(val):
             missing.append(label)
-        elif ftype == "choice_group" and (val is None or str(val).strip() == ""):
+        elif ftype in ("choice_group", "dropdown") and (val is None or str(val).strip() == ""):
             missing.append(label)
         elif ftype == "signature" and (val is None or str(val).strip() == ""):
             missing.append(label)
@@ -179,7 +179,7 @@ def save_submission(document, form, user, submitted_values):
                 elif ftype == "checkbox" and bool(val):
                     value_text = "true"
                     is_completed = True
-                elif ftype == "choice_group" and val is not None and str(val).strip() != "":
+                elif ftype in ("choice_group", "dropdown") and val is not None and str(val).strip() != "":
                     value_text = str(val)
                     is_completed = True
                 elif ftype == "signature" and val is not None and str(val).strip() != "":
@@ -267,7 +267,7 @@ def field_has_completed_value(form, field, user, all_values):
         return val is not None and str(val).strip() != ""
     if ftype == "checkbox":
         return bool(val)
-    if ftype == "choice_group":
+    if ftype in ("choice_group", "dropdown"):
         return val is not None and str(val).strip() != ""
     if ftype == "signature":
         return val is not None and str(val).strip() != ""

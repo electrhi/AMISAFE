@@ -1066,6 +1066,40 @@ function createEditableDateInput(field, key, value, uiScale, inputType) {
     return input;
 }
 
+function createEditableDropdown(field, key, value, uiScale) {
+    const select = document.createElement("select");
+    select.className = "date-input";
+    select.style.fontSize = `${Math.max(8, 14 * uiScale)}px`;
+    select.dataset.fieldKey = key;
+    if (field.required && isEmptyValue(field, value)) {
+        select.classList.add("required-empty");
+    }
+
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = field.placeholder || "선택하세요";
+    select.appendChild(ph);
+
+    (field.options || []).forEach((opt) => {
+        const o = document.createElement("option");
+        const optVal = (opt.option_value !== undefined && opt.option_value !== null)
+            ? opt.option_value : (opt.option_label || "");
+        o.value = optVal;
+        o.textContent = opt.option_label || optVal;
+        select.appendChild(o);
+    });
+
+    select.value = value || "";
+
+    select.addEventListener("change", () => {
+        EDIT_STATE[key] = select.value;
+        renderFields();
+        scheduleAutoSave();
+    });
+
+    return select;
+}
+
 function createReadonlyDateInput(value, uiScale) {
     const wrap = document.createElement("div");
     wrap.className = "readonly-box";
@@ -1263,6 +1297,10 @@ function renderFields() {
             node = editable
                 ? createEditableDateInput(field, key, value, uiScale, inputType)
                 : createReadonlyDateInput(value, uiScale);
+        } else if (field.type === "dropdown") {
+            node = editable
+                ? createEditableDropdown(field, key, value, uiScale)
+                : createReadonlyText(value, uiScale);
         } else {
             node = createReadonlyText(value, uiScale);
         }
@@ -1293,7 +1331,7 @@ function validateClientSide() {
         if (field.type === "checkbox" && !value) {
             missing.push(field.label || field.field_id);
         }
-        if (field.type === "choice_group" && (!value || String(value).trim() === "")) {
+        if ((field.type === "choice_group" || field.type === "dropdown") && (!value || String(value).trim() === "")) {
             missing.push(field.label || field.field_id);
         }
         if (field.type === "signature" && (!value || String(value).trim() === "")) {
