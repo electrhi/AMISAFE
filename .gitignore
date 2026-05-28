@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 환경/로그/런타임 산출물
+.env
+logs/
+DATA/
+
+# 진단용 임시 스크립트
+_diag_*.py
+_srv_*.log

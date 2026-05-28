@@ -4,6 +4,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 프로젝트 루트 (이 파일은 <root>/amisafe/config.py 이므로 두 단계 상위)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _abs(path):
+    """상대 경로는 프로젝트 루트 기준 절대 경로로 변환한다.
+
+    Flask send_from_directory 는 상대 directory 를 app.root_path(=amisafe 패키지)
+    기준으로 해석하므로, forms/DATA 등을 프로젝트 루트에 고정하려면 절대 경로가 필요하다.
+    """
+    return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
+
 
 class Config:
     # 보안
@@ -12,13 +24,13 @@ class Config:
     # DB
     DATABASE_URL = os.getenv("DATABASE_URL")
 
-    # 파일 경로
-    USERS_XLSX_PATH = os.getenv("USERS_XLSX_PATH", "users.xlsx")
+    # 파일 경로 (모두 프로젝트 루트 기준 절대 경로)
+    USERS_XLSX_PATH = _abs(os.getenv("USERS_XLSX_PATH", "users.xlsx"))
     USERS_SHEET_NAME = os.getenv("USERS_SHEET_NAME", "users")
-    FORM_CONFIG_PATH = os.getenv("FORM_CONFIG_PATH", "form_config.json")
-    FORMS_FOLDER = os.getenv("FORMS_FOLDER", "forms")
-    DATA_FOLDER = os.getenv("DATA_FOLDER", "DATA")
-    LOGS_FOLDER = os.getenv("LOGS_FOLDER", "logs")
+    FORM_CONFIG_PATH = _abs(os.getenv("FORM_CONFIG_PATH", "form_config.json"))
+    FORMS_FOLDER = _abs(os.getenv("FORMS_FOLDER", "forms"))
+    DATA_FOLDER = _abs(os.getenv("DATA_FOLDER", "DATA"))
+    LOGS_FOLDER = _abs(os.getenv("LOGS_FOLDER", "logs"))
 
     APP_LOG_PATH = os.path.join(LOGS_FOLDER, "app.log")
     AUDIT_LOG_PATH = os.path.join(LOGS_FOLDER, "audit.log")
